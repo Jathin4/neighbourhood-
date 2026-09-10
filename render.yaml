@@ -1,5 +1,5 @@
 # Render Blueprint. In Render: New + → Blueprint → pick this repo.
-# It reads backend/ as the service root.
+# rootDir below points the service at backend/.
 services:
   - type: web
     name: tnn-backend
