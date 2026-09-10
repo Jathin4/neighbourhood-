@@ -1,0 +1,181 @@
+import uuid
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import audit, rbac
+from app.db import get_db
+from app.deps import current_user, get_membership, require
+from app.enums import MembershipStatus, PlatformRole
+from app.errors import forbidden
+from app.models.community import Community
+from app.models.user import User
+from app.modules.community import service
+from app.modules.community.schemas import (
+    CommunityIn,
+    CommunityOut,
+    CommunityUpdateIn,
+    ImportSummary,
+    JoinRequestIn,
+    MembershipOut,
+    MembershipUpdateIn,
+    UnitBulkIn,
+    UnitOut,
+)
+
+router = APIRouter(prefix="/communities", tags=["communities"])
+
+
+async def require_member_or_platform(
+    id: uuid.UUID,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    if user.platform_role in (PlatformRole.platform_ops, PlatformRole.super_admin):
+        return user
+    m = await get_membership(db, user.id, id)
+    if m is not None and m.status == MembershipStatus.active:
+        return user
+    raise forbidden("Not a member of this community")
+
+
+@router.post("", response_model=CommunityOut, status_code=201)
+async def create_community(
+    body: CommunityIn,
+    user: User = Depends(require(rbac.CAP_COMMUNITY_CREATE)),
+    db: AsyncSession = Depends(get_db),
+):
+    community = await service.create_community(db, body.model_dump())
+    await audit.record(
+        db, actor_id=user.id, action="community.create", entity="community", entity_id=community.id
+    )
+    return community
+
+
+@router.get("", response_model=list[CommunityOut])
+async def list_communities(
+    user: User = Depends(current_user), db: AsyncSession = Depends(get_db)
+):
+    if user.platform_role in (PlatformRole.platform_ops, PlatformRole.super_admin):
+        return list(await db.scalars(select(Community).order_by(Community.name)))
+    # Residents see only communities they belong to.
+    from app.models.membership import Membership
+
+    return list(
+        await db.scalars(
+            select(Community)
+            .join(Membership, Membership.community_id == Community.id)
+            .where(Membership.user_id == user.id)
+            .order_by(Community.name)
+        )
+    )
+
+
+@router.get("/{id}", response_model=CommunityOut)
+async def get_community(
+    id: uuid.UUID,
+    _: User = Depends(require_member_or_platform),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.get_community(db, id)
+
+
+@router.patch("/{id}", response_model=CommunityOut)
+async def update_community(
+    id: uuid.UUID,
+    body: CommunityUpdateIn,
+    user: User = Depends(require(rbac.CAP_COMMUNITY_UPDATE)),
+    db: AsyncSession = Depends(get_db),
+):
+    community = await service.update_community(db, id, body.model_dump(exclude_unset=True))
+    await audit.record(
+        db, actor_id=user.id, action="community.update", entity="community", entity_id=id
+    )
+    return community
+
+
+@router.get("/{id}/units", response_model=list[UnitOut])
+async def list_units(
+    id: uuid.UUID,
+    _: User = Depends(require_member_or_platform),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_units(db, id)
+
+
+@router.post("/{community_id}/units", response_model=list[UnitOut], status_code=201)
+async def add_units(
+    community_id: uuid.UUID,
+    body: UnitBulkIn,
+    _: User = Depends(require(rbac.CAP_UNIT_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.add_units(
+        db, community_id, [u.model_dump() for u in body.units]
+    )
+
+
+@router.post("/{community_id}/members", response_model=MembershipOut, status_code=201)
+async def request_membership(
+    community_id: uuid.UUID,
+    body: JoinRequestIn,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.request_membership(
+        db, community_id, user.id, body.unit_id, body.household_relationship
+    )
+
+
+@router.get("/{community_id}/members", response_model=list[MembershipOut])
+async def list_members(
+    community_id: uuid.UUID,
+    status: str | None = Query(default=None),
+    _: User = Depends(require(rbac.CAP_MEMBER_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_memberships(db, community_id, status)
+
+
+@router.patch(
+    "/{community_id}/members/{membership_id}", response_model=MembershipOut
+)
+async def update_member(
+    community_id: uuid.UUID,
+    membership_id: uuid.UUID,
+    body: MembershipUpdateIn,
+    user: User = Depends(require(rbac.CAP_MEMBER_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    changes = body.model_dump(exclude_unset=True)
+    changes = {k: (v.value if hasattr(v, "value") else v) for k, v in changes.items()}
+    membership = await service.update_membership(db, community_id, membership_id, changes)
+    await audit.record(
+        db,
+        actor_id=user.id,
+        action="community.member.update",
+        entity="membership",
+        entity_id=membership_id,
+        meta=changes,
+    )
+    return membership
+
+
+@router.post("/{community_id}/members/import", response_model=ImportSummary)
+async def import_residents(
+    community_id: uuid.UUID,
+    file: UploadFile = File(...),
+    user: User = Depends(require(rbac.CAP_RESIDENT_IMPORT)),
+    db: AsyncSession = Depends(get_db),
+):
+    summary = await service.import_residents_csv(db, community_id, await file.read())
+    await audit.record(
+        db,
+        actor_id=user.id,
+        action="community.resident.import",
+        entity="community",
+        entity_id=community_id,
+        meta={"created": summary.created, "existing": summary.existing, "errors": summary.errors},
+    )
+    return summary

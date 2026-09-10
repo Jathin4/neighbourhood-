@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local data & secrets
+db/*.db
+db/*.db-*
+backend/.env
+*.log
+
+# Flutter / Dart (app/.gitignore covers the rest; pubspec.lock IS committed for apps)
+app/.dart_tool/
+app/.flutter-plugins*
+app/build/
+
+# Tooling
+.playwright-mcp/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,23 @@
+# Render Blueprint. In Render: New + → Blueprint → pick this repo.
+# It reads backend/ as the service root.
+services:
+  - type: web
+    name: tnn-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # Free tier has no pre-deploy hook, so migrate on boot (alembic upgrade is idempotent).
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.4"
+      - key: ENV
+        value: dev            # keeps OTP_DEBUG + permissive CORS; switch to prod once SMS is wired
+      - key: OTP_DEBUG
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true    # Render generates a strong random value
+      - key: DATABASE_URL
+        sync: false            # paste the Supabase connection string at deploy time
