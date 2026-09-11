@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     otp_max_requests_per_hour: int = 5
     # When true, the OTP code is returned in the request response and logged (dev only).
     otp_debug: bool = True
+    # Fast2SMS "otp" route (fixed template, no DLT registration needed). Unset -> logs to console.
+    fast2sms_api_key: str | None = None
 
     cors_origins: list[str] = ["http://localhost", "http://localhost:3000", "http://localhost:8080"]
 

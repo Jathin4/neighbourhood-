@@ -15,8 +15,9 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: '${Env.apiBaseUrl}/api/v1',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
+        // Render's free tier can take 30-50s to wake from an idle sleep.
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
       ),
     );
     _dio.interceptors.add(

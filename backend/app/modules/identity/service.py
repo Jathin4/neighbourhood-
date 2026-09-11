@@ -48,7 +48,10 @@ async def request_otp(db: AsyncSession, mobile: str) -> tuple[int, str | None]:
         )
     )
     await db.flush()
-    await get_sms_sender().send_otp(mobile, code)
+    try:
+        await get_sms_sender().send_otp(mobile, code)
+    except Exception as exc:
+        raise AppError("otp_send_failed", "Could not send the OTP, try again", 502) from exc
     return settings.otp_ttl_seconds, (code if settings.otp_debug else None)
 
 
