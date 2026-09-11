@@ -39,7 +39,9 @@ async def request_otp(db: AsyncSession, mobile: str) -> tuple[int, str | None]:
     if recent and recent >= settings.otp_max_requests_per_hour:
         raise AppError("otp_rate_limited", "Too many OTP requests, try later", 429)
 
-    code = new_code()
+    # ponytail: fixed test code while OTP_DEBUG=true, so no SMS provider is needed yet.
+    # Flip OTP_DEBUG=false (and set FAST2SMS_API_KEY) to switch to real random codes.
+    code = "123456" if settings.otp_debug else new_code()
     db.add(
         OtpChallenge(
             mobile=mobile,
