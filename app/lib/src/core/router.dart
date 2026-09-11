@@ -23,18 +23,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final atSplash = state.matchedLocation == '/splash';
       if (auth == AuthStatus.unknown) return atSplash ? null : '/splash';
-      if (atSplash) return '/';
+
+      // Role picker comes first on every cold start (roleProvider resets to
+      // null on launch and on logout) — login only follows if needed.
+      final atRoleSelect = state.matchedLocation == '/role';
+      if (role == null) return atRoleSelect ? null : '/role';
 
       final signedIn = auth == AuthStatus.signedIn;
       final atLogin = state.matchedLocation == '/login' || state.matchedLocation == '/otp';
       if (!signedIn) return atLogin ? null : '/login';
-      if (atLogin) return '/';
-
-      // Signed in: a user can hold different roles per community, so pick
-      // which role's screen to view once per session.
-      final atRoleSelect = state.matchedLocation == '/role';
-      if (role == null) return atRoleSelect ? null : '/role';
-      if (atRoleSelect) return '/';
+      if (atLogin || atRoleSelect) return '/';
       return null;
     },
     routes: [

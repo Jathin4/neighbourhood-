@@ -96,7 +96,13 @@ class _CommunityDetailScreenState extends ConsumerState<CommunityDetailScreen> {
     final members = ref.watch(_membersProvider(widget.communityId));
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.name)),
+      backgroundColor: AC.bg,
+      appBar: AppBar(
+        backgroundColor: AC.surface,
+        surfaceTintColor: AC.surface,
+        foregroundColor: AC.ink900,
+        title: Text(widget.name),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

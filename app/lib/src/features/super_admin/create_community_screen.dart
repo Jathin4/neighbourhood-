@@ -71,7 +71,12 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AC.bg,
-      appBar: AppBar(title: const Text('Create Community')),
+      appBar: AppBar(
+        backgroundColor: AC.surface,
+        surfaceTintColor: AC.surface,
+        foregroundColor: AC.ink900,
+        title: const Text('Create Community'),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
