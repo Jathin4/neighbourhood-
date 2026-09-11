@@ -9,7 +9,6 @@ import '../../shared/communities.dart';
 import '../../shared/me.dart';
 import '../../shared/role.dart';
 import '../../shared/ticket_ui.dart';
-import '../auth/auth_controller.dart';
 import 'data.dart';
 
 Scaffold _shell(String title, List<Widget> children) => Scaffold(
@@ -119,18 +118,6 @@ class _ProfileTabScreenState extends ConsumerState<ProfileTabScreen> {
                   Icon(Icons.switch_account_outlined, size: 18, color: PC.navy),
                   SizedBox(width: 10),
                   Text('Switch role', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                ]),
-              ),
-            ),
-            InkWell(
-              onTap: () => ref.read(authControllerProvider.notifier).logout(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Row(children: [
-                  Icon(Icons.logout, size: 18, color: PC.brick),
-                  SizedBox(width: 10),
-                  Text('Sign out',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: PC.brick)),
                 ]),
               ),
             ),

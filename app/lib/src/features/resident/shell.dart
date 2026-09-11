@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/me.dart';
 import '../../shared/ticket_ui.dart';
+import '../auth/auth_controller.dart';
 import 'data.dart';
 import 'sub_screens.dart';
 
@@ -470,11 +471,11 @@ class _EventTile extends ConsumerWidget {
 
 // --- MORE ---------------------------------------------------------
 
-class _MoreTab extends StatelessWidget {
+class _MoreTab extends ConsumerWidget {
   const _MoreTab();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: _bodyPad,
       children: [
@@ -507,6 +508,11 @@ class _MoreTab extends StatelessWidget {
           title: 'Support',
           desc: 'Raise a platform support ticket',
           onTap: () => _push(context, const SupportScreen()),
+        ),
+        _MenuRow(
+          icon: Icons.logout,
+          title: 'Log out',
+          onTap: () => ref.read(authControllerProvider.notifier).logout(),
         ),
       ],
     );
