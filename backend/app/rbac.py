@@ -13,6 +13,8 @@ CAP_COMMUNITY_UPDATE = "community.update"
 CAP_UNIT_MANAGE = "community.unit.manage"
 CAP_MEMBER_MANAGE = "community.member.manage"
 CAP_RESIDENT_IMPORT = "community.resident.import"
+CAP_USER_MANAGE = "user.manage"
+CAP_AUDIT_VIEW = "audit.view"
 
 ALL_CAPABILITIES: frozenset[str] = frozenset(
     {
@@ -21,11 +23,17 @@ ALL_CAPABILITIES: frozenset[str] = frozenset(
         CAP_UNIT_MANAGE,
         CAP_MEMBER_MANAGE,
         CAP_RESIDENT_IMPORT,
+        CAP_USER_MANAGE,
+        CAP_AUDIT_VIEW,
     }
 )
 
 PLATFORM_ROLE_CAPS: dict[str, frozenset[str]] = {
-    PlatformRole.platform_ops: frozenset({CAP_COMMUNITY_CREATE}),
+    # §7: Users + Communities are shared Platform Administration capabilities.
+    PlatformRole.platform_ops: frozenset(
+        {CAP_COMMUNITY_CREATE, CAP_COMMUNITY_UPDATE, CAP_USER_MANAGE}
+    ),
+    # §1: audit is called out specifically under Super Admin.
     PlatformRole.super_admin: ALL_CAPABILITIES,
 }
 

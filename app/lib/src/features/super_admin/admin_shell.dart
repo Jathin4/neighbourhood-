@@ -4,8 +4,19 @@ import 'package:go_router/go_router.dart';
 
 import '../../shared/role.dart';
 import '../auth/auth_controller.dart';
+import 'audit_logs_page.dart';
+import 'communities_admin_page.dart';
 import 'dashboard_page.dart';
 import 'panel_data.dart';
+import 'users_page.dart';
+
+/// Nav leaves with a real page behind them; everything else in navItems
+/// still renders the prototype's own placeholder.
+final _realPages = <String, Widget Function()>{
+  'Communities': CommunitiesAdminPage.new,
+  'All Users': UsersPage.new,
+  'Audit Logs': AuditLogsPage.new,
+};
 
 /// Super Admin Panel shell: navy sidebar + topbar + content, matching the
 /// approved prototype. Only Dashboard has real content; every other nav leaf
@@ -54,7 +65,7 @@ class _AdminShellState extends State<AdminShell> {
                 Expanded(
                   child: _selected == 'Dashboard'
                       ? const DashboardPage()
-                      : _PlaceholderPage(title: _selected),
+                      : _realPages[_selected]?.call() ?? _PlaceholderPage(title: _selected),
                 ),
               ],
             ),

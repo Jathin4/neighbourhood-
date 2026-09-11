@@ -85,3 +85,15 @@ async def superadmin_token(client, db):
     u.status = AccountStatus.active
     await db.commit()
     return token
+
+
+@pytest_asyncio.fixture
+async def platform_ops_token(client, db):
+    from sqlalchemy import select
+
+    token = await _login(client, "+919000000008")
+    u = await db.scalar(select(User).where(User.mobile == "+919000000008"))
+    u.platform_role = PlatformRole.platform_ops
+    u.status = AccountStatus.active
+    await db.commit()
+    return token
