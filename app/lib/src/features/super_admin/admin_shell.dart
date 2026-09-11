@@ -48,6 +48,7 @@ class _AdminShellState extends State<AdminShell> {
           if (wide) sidebar,
           Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _Topbar(showMenuButton: !wide),
                 Expanded(
@@ -92,11 +93,12 @@ class _Sidebar extends StatelessWidget {
         children: [
           Container(
             height: 76,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: collapsed ? 8 : 20),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Color(0x14FFFFFF))),
             ),
             child: Row(
+              mainAxisAlignment: collapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
                 Container(
                   width: 38,
