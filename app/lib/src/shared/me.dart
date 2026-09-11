@@ -5,11 +5,19 @@ import '../core/api_client.dart';
 import '../core/app_exception.dart';
 
 class Me {
-  Me({required this.id, required this.mobile, this.name, this.status, this.platformRole});
+  Me({
+    required this.id,
+    required this.mobile,
+    this.name,
+    this.email,
+    this.status,
+    this.platformRole,
+  });
 
   final String id;
   final String mobile;
   final String? name;
+  final String? email;
   final String? status;
   final String? platformRole;
 
@@ -17,6 +25,7 @@ class Me {
         id: j['id'] as String,
         mobile: j['mobile'] as String,
         name: j['name'] as String?,
+        email: j['email'] as String?,
         status: j['status'] as String?,
         platformRole: j['platform_role'] as String?,
       );

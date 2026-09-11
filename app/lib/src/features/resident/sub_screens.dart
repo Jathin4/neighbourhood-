@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api_client.dart';
+import '../../core/app_exception.dart';
 import '../../shared/communities.dart';
 import '../../shared/me.dart';
 import '../../shared/role.dart';
@@ -22,23 +25,82 @@ Scaffold _shell(String title, List<Widget> children) => Scaffold(
 
 // --- PROFILE ---------------------------------------------------------
 
-class ProfileTabScreen extends ConsumerWidget {
+class ProfileTabScreen extends ConsumerStatefulWidget {
   const ProfileTabScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileTabScreen> createState() => _ProfileTabScreenState();
+}
+
+class _ProfileTabScreenState extends ConsumerState<ProfileTabScreen> {
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  bool _loadedOnce = false;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(apiClientProvider).raw.patch('/users/me', data: {
+        'name': _name.text.trim(),
+        if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
+      });
+      ref.invalidate(meProvider);
+      if (mounted) showSnack(context, 'Profile updated');
+    } on DioException catch (e) {
+      if (mounted) showSnack(context, AppException.fromDio(e).message);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final me = ref.watch(meProvider);
+    // Fill the fields once from the loaded profile without stomping on typing.
+    me.whenData((m) {
+      if (!_loadedOnce) {
+        _name.text = m.name ?? '';
+        _email.text = m.email ?? '';
+        _loadedOnce = true;
+      }
+    });
+
     return _shell('Profile', [
       me.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Text('$e'),
         data: (m) => PanelCard(
+          title: 'Edit profile',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _row('Name', m.name ?? '—'),
+              TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name')),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email (optional)'),
+              ),
+              const SizedBox(height: 12),
               _row('Mobile', m.mobile),
               _row('Account status', m.status ?? '—'),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _saving ? null : _save,
+                  style: FilledButton.styleFrom(backgroundColor: PC.navy),
+                  child: Text(_saving ? 'Saving...' : 'Save changes'),
+                ),
+              ),
             ],
           ),
         ),
@@ -82,8 +144,11 @@ class ProfileTabScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            SizedBox(width: 110, child: Text(label, style: const TextStyle(color: PC.inkSoft, fontSize: 12))),
-            Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+            SizedBox(
+                width: 110,
+                child: Text(label, style: const TextStyle(color: PC.inkSoft, fontSize: 12))),
+            Expanded(
+                child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
           ],
         ),
       );
