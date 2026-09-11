@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/app_exception.dart';
 import 'auth_controller.dart';
+
+/// Keeps the "+91 " prefix fixed and only lets the resident type digits after
+/// it; the API still gets the number with no space (see [_PhoneScreenState._mobile]).
+class _Plus91Formatter extends TextInputFormatter {
+  static const _prefix = '+91 ';
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final text = '$_prefix$digits';
+    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+  }
+}
 
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({super.key});
@@ -13,12 +27,14 @@ class PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<PhoneScreen> {
-  final _controller = TextEditingController(text: '+91');
+  final _controller = TextEditingController(text: '+91 ');
   bool _busy = false;
   String? _error;
 
+  String get _mobile => _controller.text.replaceAll(' ', '');
+
   Future<void> _submit() async {
-    final mobile = _controller.text.trim();
+    final mobile = _mobile;
     setState(() {
       _busy = true;
       _error = null;
@@ -41,7 +57,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).devLogin(_controller.text.trim());
+      await ref.read(authControllerProvider.notifier).devLogin(_mobile);
       if (mounted) context.go('/');
     } on AppException catch (e) {
       setState(() => _error = e.message);
@@ -76,6 +92,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 TextField(
                   controller: _controller,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: [_Plus91Formatter()],
                   decoration: const InputDecoration(labelText: 'Mobile number'),
                   onSubmitted: (_) => _submit(),
                 ),
