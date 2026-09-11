@@ -38,12 +38,12 @@ void main() {
     expect(find.text('Super Admin'), findsOneWidget);
   });
 
-  testWidgets('picking a role routes to that role\'s home', (tester) async {
+  testWidgets('picking Super Admin routes to the admin panel shell', (tester) async {
     await _pump(tester);
     await tester.tap(find.text('Super Admin'));
     await tester.pumpAndSettle();
-    // AppBar title on SuperAdminHome (via RoleScaffold).
-    expect(find.widgetWithText(AppBar, 'Super Admin'), findsOneWidget);
+    expect(find.text('Super Admin Panel'), findsOneWidget); // topbar title
+    expect(find.text('Platform overview and key metrics'), findsOneWidget); // dashboard subtitle
     expect(find.text('Continue as'), findsNothing);
   });
 
