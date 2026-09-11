@@ -13,7 +13,11 @@ class _Plus91Formatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final raw = newValue.text;
+    // Only the part after the fixed prefix is real user input; strip that,
+    // not the whole string (which would re-count the prefix's own "91").
+    final rest = raw.startsWith(_prefix) ? raw.substring(_prefix.length) : raw;
+    final digits = rest.replaceAll(RegExp(r'[^0-9]'), '');
     final text = '$_prefix$digits';
     return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
   }
