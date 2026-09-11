@@ -10,6 +10,10 @@ class CommunityIn(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     address: str | None = Field(default=None, max_length=500)
     settings: dict = Field(default_factory=dict)
+    # Optional: when all three are set, units are auto-generated (§6 towers/blocks/units).
+    towers: int = Field(default=0, ge=0, le=200)
+    floors_per_tower: int = Field(default=0, ge=0, le=200)
+    flats_per_floor: int = Field(default=0, ge=0, le=100)
 
 
 class CommunityUpdateIn(BaseModel):

@@ -17,11 +17,67 @@ _MOBILE_RE = re.compile(r"^\+?[1-9]\d{7,14}$")
 _REQUIRED_CSV_COLUMNS = {"name", "mobile", "tower", "unit"}
 
 
+_MAX_GENERATED_UNITS = 5000
+
+
 async def create_community(db: AsyncSession, data: dict) -> Community:
+    data = dict(data)
+    towers = data.pop("towers", 0)
+    floors = data.pop("floors_per_tower", 0)
+    flats = data.pop("flats_per_floor", 0)
+
+    if towers and floors and flats:
+        data["settings"] = {
+            **data.get("settings", {}),
+            "towers": towers,
+            "floors_per_tower": floors,
+            "flats_per_floor": flats,
+        }
+
     community = Community(**data)
     db.add(community)
     await db.flush()
+
+    if towers and floors and flats:
+        await generate_units(db, community.id, towers, floors, flats)
+
     return community
+
+
+def _tower_label(index: int) -> str:
+    """0 -> 'A', 25 -> 'Z', 26 -> 'AA', ..."""
+    label = ""
+    index += 1
+    while index > 0:
+        index, rem = divmod(index - 1, 26)
+        label = chr(ord("A") + rem) + label
+    return label
+
+
+async def generate_units(
+    db: AsyncSession,
+    community_id: uuid.UUID,
+    towers: int,
+    floors_per_tower: int,
+    flats_per_floor: int,
+) -> int:
+    total = towers * floors_per_tower * flats_per_floor
+    if total > _MAX_GENERATED_UNITS:
+        raise AppError(
+            "too_many_units",
+            f"That configuration would create {total} units (max {_MAX_GENERATED_UNITS})",
+            400,
+        )
+    created = 0
+    for t in range(towers):
+        tower = _tower_label(t)
+        for floor in range(1, floors_per_tower + 1):
+            for flat in range(1, flats_per_floor + 1):
+                unit_number = f"{floor}{flat:02d}"
+                _, is_new = await get_or_create_unit(db, community_id, tower, unit_number)
+                if is_new:
+                    created += 1
+    return created
 
 
 async def get_community(db: AsyncSession, community_id: uuid.UUID) -> Community:

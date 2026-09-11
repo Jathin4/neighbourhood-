@@ -1,10 +1,4 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../core/api_client.dart';
-import '../../core/app_exception.dart';
-import '../../shared/communities.dart';
 
 class _Field {
   const _Field(this.label, {this.hint, this.options});
@@ -20,10 +14,6 @@ class _ActionConfig {
 }
 
 const _configs = {
-  'Create Community': _ActionConfig(
-    'Set up a new gated community or apartment complex.',
-    [_Field('Community Name', hint: 'e.g. Palm Grove Residency'), _Field('City', hint: 'e.g. Hyderabad')],
-  ),
   'Create User': _ActionConfig(
     'Add a new resident, admin, or committee member to the platform.',
     [
@@ -63,10 +53,11 @@ const _configs = {
   ),
 };
 
-/// Only "Create Community" hits the real API (POST /communities is actually
-/// built); every other quick action mirrors the prototype's own mock modal —
-/// it just confirms and toasts, since those backend modules don't exist yet.
-Future<void> showQuickActionDialog(BuildContext context, WidgetRef ref, String action) async {
+/// Every one of these mirrors the prototype's own mock modal — it just
+/// confirms and toasts, since those backend modules don't exist yet.
+/// ("Create Community" got its own full-screen flow instead — see
+/// create_community_screen.dart — since it's actually built.)
+Future<void> showQuickActionDialog(BuildContext context, String action) async {
   final cfg = _configs[action]!;
   final controllers = [for (final _ in cfg.fields) TextEditingController()];
   final selections = List<String?>.filled(cfg.fields.length, null);
@@ -113,14 +104,9 @@ Future<void> showQuickActionDialog(BuildContext context, WidgetRef ref, String a
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(
-            onPressed: () async {
-              if (action == 'Create Community') {
-                await _createCommunity(context, ref, controllers[0].text.trim(),
-                    controllers.length > 1 ? controllers[1].text.trim() : '');
-              } else {
-                Navigator.pop(context);
-                _toast(context, '$action — saved successfully.');
-              }
+            onPressed: () {
+              Navigator.pop(context);
+              _toast(context, '$action — saved successfully.');
             },
             child: Text(action),
           ),
@@ -128,28 +114,6 @@ Future<void> showQuickActionDialog(BuildContext context, WidgetRef ref, String a
       ),
     ),
   );
-}
-
-Future<void> _createCommunity(
-  BuildContext context,
-  WidgetRef ref,
-  String name,
-  String city,
-) async {
-  if (name.isEmpty) return;
-  try {
-    await ref.read(apiClientProvider).raw.post('/communities', data: {
-      'name': name,
-      if (city.isNotEmpty) 'address': city,
-    });
-    ref.invalidate(communitiesProvider);
-    if (context.mounted) {
-      Navigator.pop(context);
-      _toast(context, 'Create Community — saved successfully.');
-    }
-  } on DioException catch (e) {
-    if (context.mounted) _toast(context, AppException.fromDio(e).message);
-  }
 }
 
 void _toast(BuildContext context, String message) {

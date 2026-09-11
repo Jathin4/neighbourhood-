@@ -15,6 +15,56 @@ async def _make_community(client, superadmin_token, name="Green Meadows") -> str
     return r.json()["id"]
 
 
+async def test_create_community_generates_units_from_structure(client, superadmin_token):
+    r = await client.post(
+        "/api/v1/communities",
+        headers=_h(superadmin_token),
+        json={
+            "name": "Palm Grove",
+            "address": "Hyderabad",
+            "towers": 2,
+            "floors_per_tower": 3,
+            "flats_per_floor": 4,
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["settings"] == {"towers": 2, "floors_per_tower": 3, "flats_per_floor": 4}
+    cid = body["id"]
+
+    r = await client.get(f"/api/v1/communities/{cid}/units", headers=_h(superadmin_token))
+    assert r.status_code == 200
+    units = r.json()
+    assert len(units) == 2 * 3 * 4
+    towers = {u["tower"] for u in units}
+    assert towers == {"A", "B"}
+    assert {u["unit_number"] for u in units if u["tower"] == "A"} == {
+        "101", "102", "103", "104", "201", "202", "203", "204", "301", "302", "303", "304",
+    }
+
+
+async def test_create_community_rejects_absurd_structure(client, superadmin_token):
+    r = await client.post(
+        "/api/v1/communities",
+        headers=_h(superadmin_token),
+        json={"name": "Too Big", "towers": 200, "floors_per_tower": 200, "flats_per_floor": 100},
+    )
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "too_many_units"
+
+
+async def test_list_communities_search(client, superadmin_token):
+    await _make_community(client, superadmin_token, "Green Meadows")
+    await _make_community(client, superadmin_token, "Palm Grove Residency")
+
+    r = await client.get(
+        "/api/v1/communities", headers=_h(superadmin_token), params={"search": "palm"}
+    )
+    assert r.status_code == 200
+    names = [c["name"] for c in r.json()]
+    assert names == ["Palm Grove Residency"]
+
+
 async def test_superadmin_creates_community_and_units(client, superadmin_token):
     cid = await _make_community(client, superadmin_token)
 

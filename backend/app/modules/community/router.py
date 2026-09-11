@@ -55,21 +55,26 @@ async def create_community(
 
 @router.get("", response_model=list[CommunityOut])
 async def list_communities(
-    user: User = Depends(current_user), db: AsyncSession = Depends(get_db)
+    search: str | None = Query(default=None),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     if user.platform_role in (PlatformRole.platform_ops, PlatformRole.super_admin):
-        return list(await db.scalars(select(Community).order_by(Community.name)))
+        q = select(Community)
+        if search:
+            q = q.where(Community.name.ilike(f"%{search}%"))
+        return list(await db.scalars(q.order_by(Community.name)))
     # Residents see only communities they belong to.
     from app.models.membership import Membership
 
-    return list(
-        await db.scalars(
-            select(Community)
-            .join(Membership, Membership.community_id == Community.id)
-            .where(Membership.user_id == user.id)
-            .order_by(Community.name)
-        )
+    q = (
+        select(Community)
+        .join(Membership, Membership.community_id == Community.id)
+        .where(Membership.user_id == user.id)
     )
+    if search:
+        q = q.where(Community.name.ilike(f"%{search}%"))
+    return list(await db.scalars(q.order_by(Community.name)))
 
 
 @router.get("/{id}", response_model=CommunityOut)

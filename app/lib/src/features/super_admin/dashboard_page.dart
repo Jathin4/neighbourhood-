@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/communities.dart';
+import 'create_community_screen.dart';
 import 'growth_chart.dart';
 import 'panel_data.dart';
 import 'quick_action_dialog.dart';
@@ -269,7 +270,10 @@ class _QuickActionsCard extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: InkWell(
                 borderRadius: BorderRadius.circular(11),
-                onTap: () => showQuickActionDialog(context, ref, q.label),
+                onTap: () => q.label == 'Create Community'
+                    ? Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const CreateCommunityScreen()))
+                    : showQuickActionDialog(context, q.label),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
