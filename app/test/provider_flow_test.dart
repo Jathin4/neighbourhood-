@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tnn_app/src/features/provider/data.dart';
 import 'package:tnn_app/src/features/provider/shell.dart';
+import 'package:tnn_app/src/shared/ticket_ui.dart';
 
 void main() {
   group('PortalController', () {

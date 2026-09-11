@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 
-import 'data.dart';
+/// Shared "ticket portal" design system — used by the Service Provider and
+/// Resident portals so both roles get the same look and feel (colors,
+/// ticket cards, panels, stat chips) with role-specific content on top.
 
-/// Provider-portal palette (mirrors the approved prototype).
+/// Visual status shared by tickets, bookings and support rows.
+enum TStatus { blue, amber, success, danger }
+
+IconData catIcon(String cat) => switch (cat) {
+      'bolt' => Icons.electrical_services,
+      'wrench' => Icons.plumbing,
+      'fan' => Icons.ac_unit,
+      'spray' => Icons.pest_control,
+      'notice' => Icons.campaign,
+      'issue' => Icons.report_problem,
+      'event' => Icons.event,
+      'poll' => Icons.poll,
+      'directory' => Icons.people,
+      'support' => Icons.support_agent,
+      _ => Icons.build,
+    };
+
 abstract final class PC {
   static const bg = Color(0xFFF6F5F0);
   static const panel = Colors.white;
@@ -61,8 +79,7 @@ class Pill extends StatelessWidget {
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Text(
         text,
         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg),
@@ -83,15 +100,12 @@ class PanelCard extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
-      decoration:
-          BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
+      decoration: BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null) ...[
-            Text(title!,
-                style: const TextStyle(
-                    fontSize: 12.5, fontWeight: FontWeight.w600)),
+            Text(title!, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
           ],
           child,
@@ -114,8 +128,7 @@ class StatChip extends StatelessWidget {
       width: 120,
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration:
-          BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
+      decoration: BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,9 +187,7 @@ class SectionTitle extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(text,
-                style: const TextStyle(
-                    fontSize: 13.5, fontWeight: FontWeight.w600)),
+            child: Text(text, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
           ),
           if (trailing != null) trailing!,
         ],
@@ -185,7 +196,8 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
-/// The perforated-stub ticket card used for leads, bookings and support rows.
+/// The perforated-stub ticket card used for leads, bookings, issues and
+/// support rows across both the Provider and Resident portals.
 class TicketCard extends StatelessWidget {
   const TicketCard({
     required this.cat,
@@ -211,8 +223,7 @@ class TicketCard extends StatelessWidget {
     final c = _statusColors(status);
     return Container(
       margin: const EdgeInsets.only(bottom: 9),
-      decoration:
-          BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
+      decoration: BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -242,36 +253,24 @@ class TicketCard extends StatelessWidget {
                                   style: const TextStyle(
                                       fontSize: 10,
                                       color: PC.inkFaint,
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures()
-                                      ])),
+                                      fontFeatures: [FontFeature.tabularFigures()])),
                               const SizedBox(height: 1),
                               Text(title,
                                   style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.3)),
+                                      fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
                             ],
                           ),
                         ),
-                        if (trailing != null) ...[
-                          const SizedBox(width: 8),
-                          trailing!
-                        ],
+                        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
                       ],
                     ),
                     const SizedBox(height: 4),
                     for (final line in meta)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(line,
-                            style: const TextStyle(
-                                fontSize: 11, color: PC.inkSoft)),
+                        child: Text(line, style: const TextStyle(fontSize: 11, color: PC.inkSoft)),
                       ),
-                    if (actions != null) ...[
-                      const SizedBox(height: 10),
-                      actions!
-                    ],
+                    if (actions != null) ...[const SizedBox(height: 10), actions!],
                   ],
                 ),
               ),

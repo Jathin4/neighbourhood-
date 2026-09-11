@@ -1,16 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Visual status shared by tickets, bookings and support rows.
-enum TStatus { blue, amber, success, danger }
-
-IconData catIcon(String cat) => switch (cat) {
-      'bolt' => Icons.electrical_services,
-      'wrench' => Icons.plumbing,
-      'fan' => Icons.ac_unit,
-      'spray' => Icons.pest_control,
-      _ => Icons.build,
-    };
+import '../../shared/ticket_ui.dart' show TStatus;
 
 class Lead {
   const Lead({

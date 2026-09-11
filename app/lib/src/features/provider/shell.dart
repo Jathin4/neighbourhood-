@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_controller.dart';
 import 'data.dart';
 import 'sub_screens.dart';
-import 'ui.dart';
+import '../../shared/ticket_ui.dart';
 
 class ProviderShell extends ConsumerStatefulWidget {
   const ProviderShell({super.key});

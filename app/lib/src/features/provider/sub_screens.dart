@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'data.dart';
-import 'ui.dart';
+import '../../shared/ticket_ui.dart';
 
 Scaffold _shell(String title, List<Widget> children) => Scaffold(
       backgroundColor: PC.bg,

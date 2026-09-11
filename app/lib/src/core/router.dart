@@ -9,7 +9,7 @@ import '../features/committee_member/committee_member_home.dart';
 import '../features/community_admin/community_admin_home.dart';
 import '../features/platform_ops/platform_ops_home.dart';
 import '../features/provider/shell.dart';
-import '../features/resident/resident_home.dart';
+import '../features/resident/shell.dart';
 import '../features/super_admin/super_admin_home.dart';
 import '../shared/role.dart';
 import '../shared/role_select_screen.dart';
@@ -57,7 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         builder: (_, __) => switch (role) {
-          AppRole.resident => const ResidentHome(),
+          AppRole.resident => const ResidentShell(),
           AppRole.communityAdmin => const CommunityAdminHome(),
           AppRole.committeeMember => const CommitteeMemberHome(),
           AppRole.provider => const ProviderShell(),
