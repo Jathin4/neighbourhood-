@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/token_store.dart';
+import '../../shared/role.dart';
 import 'auth_repository.dart';
 
 enum AuthStatus { unknown, signedOut, signedIn }
@@ -36,6 +37,7 @@ class AuthController extends Notifier<AuthStatus> {
 
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
+    ref.read(roleProvider.notifier).state = null;
     state = AuthStatus.signedOut;
   }
 }
