@@ -5,9 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/otp_screen.dart';
 import '../features/auth/phone_screen.dart';
-import '../features/committee_member/committee_member_home.dart';
-import '../features/community_admin/community_admin_home.dart';
-import '../features/platform_ops/platform_ops_home.dart';
+import '../features/committee_member/committee_member_shell.dart';
+import '../features/community_admin/community_admin_shell.dart';
+import '../features/platform_ops/platform_ops_shell.dart';
 import '../features/provider/shell.dart';
 import '../features/resident/shell.dart';
 import '../features/super_admin/super_admin_home.dart';
@@ -58,10 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (_, __) => switch (role) {
           AppRole.resident => const ResidentShell(),
-          AppRole.communityAdmin => const CommunityAdminHome(),
-          AppRole.committeeMember => const CommitteeMemberHome(),
+          AppRole.communityAdmin => const CommunityAdminShell(),
+          AppRole.committeeMember => const CommitteeMemberShell(),
           AppRole.provider => const ProviderShell(),
-          AppRole.platformOps => const PlatformOpsHome(),
+          AppRole.platformOps => const PlatformOpsShell(),
           AppRole.superAdmin => const SuperAdminHome(),
           null => const Scaffold(body: Center(child: CircularProgressIndicator())),
         },

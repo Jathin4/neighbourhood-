@@ -198,6 +198,90 @@ class SectionTitle extends StatelessWidget {
   }
 }
 
+/// Tappable settings-style row (icon, title, optional description, chevron)
+/// used by every role's "More" tab.
+class MenuRow extends StatelessWidget {
+  const MenuRow({required this.icon, required this.title, this.desc, required this.onTap, super.key});
+
+  final IconData icon;
+  final String title;
+  final String? desc;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: PC.panel, border: Border.all(color: PC.line)),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 17,
+              backgroundColor: PC.blueBg,
+              child: Icon(icon, size: 16, color: PC.navy),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  if (desc != null) Text(desc!, style: const TextStyle(fontSize: 10.5, color: PC.inkSoft)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: PC.inkFaint),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Plain info card (title + status pill + description, no icon strip) used
+/// by Community Admin / Committee Member / Platform Ops' tab screens —
+/// mirrors the prototype's `.db-card`.
+class InfoCard extends StatelessWidget {
+  const InfoCard({required this.title, required this.desc, this.tag, this.tagKind = PillKind.grey, super.key});
+
+  final String title;
+  final String desc;
+  final String? tag;
+  final PillKind tagKind;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PC.panel,
+        border: Border.all(color: PC.line),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+              ),
+              if (tag != null) ...[const SizedBox(width: 8), Pill(tag!, kind: tagKind)],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(desc, style: const TextStyle(fontSize: 12.5, color: PC.inkSoft, height: 1.5)),
+        ],
+      ),
+    );
+  }
+}
+
 /// The perforated-stub ticket card used for leads, bookings, issues and
 /// support rows across both the Provider and Resident portals.
 class TicketCard extends StatelessWidget {

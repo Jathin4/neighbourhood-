@@ -4,46 +4,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/community_detail_screen.dart';
 import '../../shared/csv_import_screen.dart';
 import '../../shared/my_memberships.dart';
-import '../../shared/role_scaffold.dart';
 import '../../shared/ticket_ui.dart';
 import '../../shared/units_screen.dart';
 
 /// §6 Community Administration: configure community/units, bulk resident
 /// import, approve/reject membership, assign admin/committee permissions —
 /// scoped to whichever communities this user is actually an active admin of.
-class CommunityAdminHome extends ConsumerWidget {
-  const CommunityAdminHome({super.key});
+/// Used by CommunityAdminShell's Overview tab.
+class CommunityAdminMembershipsSection extends ConsumerWidget {
+  const CommunityAdminMembershipsSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final memberships = ref.watch(myMembershipsProvider);
-
-    return RoleScaffold(
-      title: 'Community Admin',
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const GreetingHeader(),
-          const SizedBox(height: 16),
-          Text('Communities you administer', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          memberships.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('$e'),
-            data: (list) {
-              final admin = list
-                  .where((m) => m.role == 'community_admin' && m.status == 'active')
-                  .toList();
-              if (admin.isEmpty) {
-                return const _CommunityAdminDemo();
-              }
-              return Column(
-                children: [for (final m in admin) _CommunityAdminCard(m)],
-              );
-            },
-          ),
-        ],
-      ),
+    return memberships.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (e, _) => Text('$e'),
+      data: (list) {
+        final admin =
+            list.where((m) => m.role == 'community_admin' && m.status == 'active').toList();
+        if (admin.isEmpty) {
+          return const _CommunityAdminDemo();
+        }
+        return Column(
+          children: [for (final m in admin) _CommunityAdminCard(m)],
+        );
+      },
     );
   }
 }

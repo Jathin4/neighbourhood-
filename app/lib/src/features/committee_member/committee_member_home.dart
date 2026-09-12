@@ -4,42 +4,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/csv_import_screen.dart';
 import '../../shared/members_management_screen.dart';
 import '../../shared/my_memberships.dart';
-import '../../shared/role_scaffold.dart';
 import '../../shared/ticket_ui.dart';
 import '../../shared/units_screen.dart';
 
 /// Committee members get *configurable* per-membership capabilities (§1),
 /// not a fixed role screen — what shows up here is driven entirely by which
 /// capabilities the community admin actually granted, resolved server-side.
-class CommitteeMemberHome extends ConsumerWidget {
-  const CommitteeMemberHome({super.key});
+/// Used by CommitteeMemberShell's Tasks tab.
+class CommitteeMembershipsSection extends ConsumerWidget {
+  const CommitteeMembershipsSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final memberships = ref.watch(myMembershipsProvider);
-
-    return RoleScaffold(
-      title: 'Committee Member',
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const GreetingHeader(),
-          const SizedBox(height: 16),
-          memberships.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('$e'),
-            data: (list) {
-              final committee = list
-                  .where((m) => m.role == 'committee_member' && m.status == 'active')
-                  .toList();
-              if (committee.isEmpty) {
-                return const _CommitteeMemberDemo();
-              }
-              return Column(children: [for (final m in committee) _CommitteeCard(m)]);
-            },
-          ),
-        ],
-      ),
+    return memberships.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (e, _) => Text('$e'),
+      data: (list) {
+        final committee =
+            list.where((m) => m.role == 'committee_member' && m.status == 'active').toList();
+        if (committee.isEmpty) {
+          return const _CommitteeMemberDemo();
+        }
+        return Column(children: [for (final m in committee) _CommitteeCard(m)]);
+      },
     );
   }
 }

@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tnn_app/src/features/committee_member/committee_member_home.dart';
 import 'package:tnn_app/src/shared/my_memberships.dart';
 
+Widget _committeeSection() => const Scaffold(
+      body: SingleChildScrollView(child: CommitteeMembershipsSection()),
+    );
+
 MyMembership _membership({required List<String> caps, String role = 'committee_member'}) =>
     MyMembership(
       id: 'm1',
@@ -19,7 +23,7 @@ Future<void> _pump(WidgetTester tester, List<MyMembership> memberships) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [myMembershipsProvider.overrideWith((ref) async => memberships)],
-      child: const MaterialApp(home: CommitteeMemberHome()),
+      child: MaterialApp(home: _committeeSection()),
     ),
   );
   await tester.pumpAndSettle();
