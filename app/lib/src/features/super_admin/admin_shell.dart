@@ -150,7 +150,7 @@ class _Sidebar extends StatelessWidget {
                   onPressed: onToggleCollapse,
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0x0DFFFFFF),
-                    foregroundColor: const Color(0xFFB8C2D9),
+                    foregroundColor: const Color(0xFFAEC0A8),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   icon: Icon(collapsed ? Icons.chevron_right : Icons.chevron_left, size: 16),
@@ -197,7 +197,7 @@ class _Sidebar extends StatelessWidget {
   Widget _tile(IconData? icon, String label, bool active, VoidCallback onTap,
       {IconData? chevron, bool dense = false}) {
     return Material(
-      color: active ? const Color(0xFF2563EB) : Colors.transparent,
+      color: active ? AC.blue : Colors.transparent,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -206,7 +206,7 @@ class _Sidebar extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 8 : 10),
           child: Row(
             children: [
-              if (icon != null) Icon(icon, size: 18, color: active ? Colors.white : const Color(0xFFB8C2D9)),
+              if (icon != null) Icon(icon, size: 18, color: active ? Colors.white : const Color(0xFFAEC0A8)),
               if (icon != null && !collapsed) const SizedBox(width: 12),
               if (!collapsed)
                 Expanded(
@@ -216,11 +216,11 @@ class _Sidebar extends StatelessWidget {
                     style: TextStyle(
                       fontSize: dense ? 13 : 13.5,
                       fontWeight: FontWeight.w500,
-                      color: active ? Colors.white : const Color(0xFFB8C2D9),
+                      color: active ? Colors.white : const Color(0xFFAEC0A8),
                     ),
                   ),
                 ),
-              if (chevron != null) Icon(chevron, size: 16, color: const Color(0xFF9AA6C0)),
+              if (chevron != null) Icon(chevron, size: 16, color: const Color(0xFF9DB098)),
             ],
           ),
         ),
@@ -262,7 +262,7 @@ class _Topbar extends ConsumerWidget {
           child: Text(
             'Super Admin Panel',
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFFAAB6CF), fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(color: Color(0xFFB7C4AF), fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ),
         if (showSearch) ...[
@@ -274,9 +274,9 @@ class _Topbar extends ConsumerWidget {
                 style: const TextStyle(color: Colors.white, fontSize: 13.5),
                 decoration: InputDecoration(
                   isDense: true,
-                  prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF8B96B3)),
+                  prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF93A08E)),
                   hintText: 'Search anything...',
-                  hintStyle: const TextStyle(color: Color(0xFF8B96B3)),
+                  hintStyle: const TextStyle(color: Color(0xFF93A08E)),
                   filled: true,
                   fillColor: const Color(0x14FFFFFF),
                   border: OutlineInputBorder(
@@ -312,7 +312,7 @@ class _Topbar extends ConsumerWidget {
             children: [
               const CircleAvatar(
                 radius: 17,
-                backgroundColor: Color(0xFF7C5CFF),
+                backgroundColor: AC.blue,
                 child: Text('SA',
                     style: TextStyle(
                         color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12.5)),
@@ -323,7 +323,7 @@ class _Topbar extends ConsumerWidget {
                     style: TextStyle(
                         color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13.5)),
               ],
-              const Icon(Icons.expand_more, size: 16, color: Color(0xFF8B96B3)),
+              const Icon(Icons.expand_more, size: 16, color: Color(0xFF93A08E)),
             ],
           ),
           itemBuilder: (context) => const [
@@ -359,7 +359,7 @@ class _NotifIcon extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Icon(Icons.notifications_outlined, color: Color(0xFFCDD6E8)),
+        const Icon(Icons.notifications_outlined, color: Color(0xFFB7C4AF)),
         Positioned(
           top: -4,
           right: -4,

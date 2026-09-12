@@ -427,7 +427,7 @@ class _HealthCard extends StatelessWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                        color: const Color(0xFFF2F4F9), borderRadius: BorderRadius.circular(8)),
+                        color: AC.blue50, borderRadius: BorderRadius.circular(8)),
                     child: Icon(h.$2, size: 15, color: AC.ink600),
                   ),
                   const SizedBox(width: 12),

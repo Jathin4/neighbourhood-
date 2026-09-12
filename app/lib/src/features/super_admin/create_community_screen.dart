@@ -90,7 +90,7 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
                     controller: _name,
                     decoration: const InputDecoration(
                       labelText: 'Community name',
-                      hintText: 'e.g. Palm Grove Residency',
+                      hintText: 'e.g. Palm Grove Society',
                     ),
                   ),
                   const SizedBox(height: 16),

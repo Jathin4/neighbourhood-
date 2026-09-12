@@ -79,7 +79,7 @@ class _ChartPainter extends CustomPainter {
     final max = niceMax == 0 ? 1000.0 : niceMax.toDouble();
 
     final gridPaint = Paint()
-      ..color = const Color(0xFFEEF0F6)
+      ..color = AC.line
       ..strokeWidth = 1;
     final labelStyle = TextStyle(fontSize: 10, color: AC.ink400);
 

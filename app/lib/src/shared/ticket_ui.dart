@@ -21,15 +21,17 @@ IconData catIcon(String cat) => switch (cat) {
       _ => Icons.build,
     };
 
+// Same earthy-green brand palette as shared/auth_ui.dart's LC.* (the login
+// flow) so the Provider and Resident portals match the rest of the app.
 abstract final class PC {
-  static const bg = Color(0xFFF6F5F0);
+  static const bg = Color(0xFFF4F7EF);
   static const panel = Colors.white;
-  static const ink = Color(0xFF17242E);
-  static const inkSoft = Color(0xFF57666F);
-  static const inkFaint = Color(0xFF8B9AA1);
-  static const line = Color(0xFFDCD7C8);
-  static const lineSoft = Color(0xFFE9E6DB);
-  static const navy = Color(0xFF1C3A57);
+  static const ink = Color(0xFF1D2A1C);
+  static const inkSoft = Color(0xFF5B6B58);
+  static const inkFaint = Color(0xFF93A08E);
+  static const line = Color(0xFFDFE6D6);
+  static const lineSoft = Color(0xFFE3ECDC);
+  static const navy = Color(0xFF2F5D3A);
   static const marigold = Color(0xFFE2A22A);
   static const marigoldDeep = Color(0xFFB9821A);
   static const brick = Color(0xFFB04A32);
@@ -37,7 +39,7 @@ abstract final class PC {
   static const green = Color(0xFF3E7D54);
   static const greenBg = Color(0xFFE7F1E8);
   static const amberBg = Color(0xFFFBEFD8);
-  static const blueBg = Color(0xFFE7EEF4);
+  static const blueBg = Color(0xFFE3ECDC);
 }
 
 ({Color bg, Color fg}) _statusColors(TStatus s) => switch (s) {
@@ -54,7 +56,7 @@ void showSnack(BuildContext context, String message) {
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF122840),
+        backgroundColor: const Color(0xFF16311D),
         duration: const Duration(seconds: 2),
       ),
     );

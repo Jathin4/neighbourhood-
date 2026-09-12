@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
-/// Super Admin Panel palette (mirrors the approved prototype).
+/// Super Admin Panel palette — brand slots (navy900/bg/surface/ink*/line/
+/// blue*) recolored to the same earthy-green palette as shared/auth_ui.dart's
+/// LC.* so the console matches the rest of the app; the remaining hues
+/// (green/purple/amber/red/teal) stay as category/status color-coding.
 abstract final class AC {
-  static const navy900 = Color(0xFF0D1B34);
-  static const bg = Color(0xFFF4F6FB);
+  static const navy900 = Color(0xFF16311D);
+  static const bg = Color(0xFFF4F7EF);
   static const surface = Colors.white;
-  static const ink900 = Color(0xFF101828);
-  static const ink600 = Color(0xFF475467);
-  static const ink400 = Color(0xFF98A2B3);
-  static const line = Color(0xFFE6E9F0);
-  static const blue = Color(0xFF2563EB);
-  static const blue50 = Color(0xFFE9F0FF);
+  static const ink900 = Color(0xFF1D2A1C);
+  static const ink600 = Color(0xFF5B6B58);
+  static const ink400 = Color(0xFF93A08E);
+  static const line = Color(0xFFDFE6D6);
+  static const blue = Color(0xFF2F5D3A);
+  static const blue50 = Color(0xFFE3ECDC);
   static const green = Color(0xFF12875A);
   static const green50 = Color(0xFFE5F7EE);
   static const purple = Color(0xFF7C5CFF);
@@ -91,17 +94,20 @@ class ActivityRow {
   final Color color, bg;
 }
 
+// Names below intentionally reuse the same entities as the Provider/Resident
+// mock data (features/provider/data.dart, features/resident/data.dart) so
+// the demo reads as one connected world across roles.
 const mockActivity = [
   ActivityRow('Today, 10:24 AM', 'Provider Verified', Icons.check, AC.green, AC.green50,
-      'ABC Plumbing Services', 'Provider ID: PRV-1024'),
+      'Suresh Plumbing Works', 'Provider ID: PRV-1024'),
   ActivityRow('Today, 09:18 AM', 'Community Created', Icons.apartment, AC.blue, AC.blue50,
-      'Sunrise Towers', 'Community ID: COM-085'),
+      'Green Meadows Residency', 'Community ID: COM-085'),
   ActivityRow('Today, 08:42 AM', 'New Booking', Icons.calendar_month, AC.purple, AC.purple50,
-      'Rohit Sharma', 'Booking ID: BK-4587'),
+      'Rohit Verma', 'Booking ID: BK-4587'),
   ActivityRow('Today, 07:15 AM', 'Refund Issued', Icons.currency_rupee, AC.amber, AC.amber50,
-      'Priya Nair', 'Payment ID: PAY-7782'),
+      'Priya Menon', 'Payment ID: PAY-7782'),
   ActivityRow('Yesterday, 06:32 PM', 'User Suspended', Icons.block, AC.red, AC.red50,
-      'Suresh Kumar', 'Reason: Policy violation'),
+      'Karthik Nair', 'Reason: Policy violation'),
 ];
 
 class ApprovalItem {
