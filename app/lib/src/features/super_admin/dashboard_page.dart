@@ -40,29 +40,38 @@ class DashboardPage extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 22),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _StatCard(
-              label: 'Total Communities',
-              value: communities.maybeWhen(data: (l) => '${l.length}', orElse: () => '—'),
-              caption: 'Synced live from the database',
-              icon: Icons.apartment_outlined,
-              bg: AC.green50,
-              fg: AC.green,
-            ),
-            for (final s in mockStats)
-              _StatCard(
-                label: s.label,
-                value: s.value,
-                delta: s.delta,
-                up: s.up,
-                icon: s.icon,
-                bg: s.bg,
-                fg: s.fg,
-              ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 16.0;
+            final columns = (constraints.maxWidth / 230).floor().clamp(2, 4);
+            final cardWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Total Communities',
+                  value: communities.maybeWhen(data: (l) => '${l.length}', orElse: () => '—'),
+                  caption: 'Synced live from the database',
+                  icon: Icons.apartment_outlined,
+                  bg: AC.green50,
+                  fg: AC.green,
+                ),
+                for (final s in mockStats)
+                  _StatCard(
+                    width: cardWidth,
+                    label: s.label,
+                    value: s.value,
+                    delta: s.delta,
+                    up: s.up,
+                    icon: s.icon,
+                    bg: s.bg,
+                    fg: s.fg,
+                  ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 20),
         wide
@@ -179,6 +188,7 @@ class _Card extends StatelessWidget {
 
 class _StatCard extends StatelessWidget {
   const _StatCard({
+    required this.width,
     required this.label,
     required this.value,
     required this.icon,
@@ -189,6 +199,7 @@ class _StatCard extends StatelessWidget {
     this.caption,
   });
 
+  final double width;
   final String label, value;
   final String? delta, caption;
   final bool up;
@@ -198,7 +209,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 250,
+      width: width,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: AC.surface,
