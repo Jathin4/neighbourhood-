@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The 6 roles from the requirements doc (§1). Resident/Community Admin/
@@ -32,24 +31,6 @@ enum AppRole {
         AppRole.platformOps =>
           'Verification, moderation, support, provider/category operations',
         AppRole.superAdmin => 'Configuration, finance, RBAC, audit — full platform',
-      };
-
-  IconData get icon => switch (this) {
-        AppRole.resident => Icons.home_rounded,
-        AppRole.communityAdmin => Icons.shield_rounded,
-        AppRole.committeeMember => Icons.groups_rounded,
-        AppRole.provider => Icons.handyman_rounded,
-        AppRole.platformOps => Icons.support_agent_rounded,
-        AppRole.superAdmin => Icons.admin_panel_settings_rounded,
-      };
-
-  Color get color => switch (this) {
-        AppRole.resident => const Color(0xFF2E7D32),
-        AppRole.communityAdmin => const Color(0xFF1E56A0),
-        AppRole.committeeMember => const Color(0xFFB9821A),
-        AppRole.provider => const Color(0xFF0F9D9D),
-        AppRole.platformOps => const Color(0xFF7C5CFF),
-        AppRole.superAdmin => const Color(0xFF0D1B34),
       };
 }
 

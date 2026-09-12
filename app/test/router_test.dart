@@ -11,6 +11,15 @@ class _FakeSignedInAuth extends AuthController {
 }
 
 Future<void> _pump(WidgetTester tester) async {
+  // The role picker's 6 cards don't all fit the default 800x600 test surface;
+  // a plain ListView only builds children within its viewport/cache extent,
+  // so later cards (e.g. Super Admin) wouldn't exist in the tree yet. Keep
+  // the same width the Super Admin dashboard test already relied on and
+  // only add height, so its own (pre-existing, unrelated) narrow-width
+  // overflow in _DateRangeChip doesn't regress.
+  await tester.binding.setSurfaceSize(const Size(800, 1300));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
   final container = ProviderContainer(
     overrides: [authControllerProvider.overrideWith(_FakeSignedInAuth.new)],
   );

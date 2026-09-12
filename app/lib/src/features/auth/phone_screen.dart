@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/app_exception.dart';
+import '../../shared/auth_ui.dart';
+import '../../shared/role.dart';
 import 'auth_controller.dart';
 
 /// Keeps the "+91 " prefix fixed and only lets the resident type digits after
@@ -17,7 +19,8 @@ class _Plus91Formatter extends TextInputFormatter {
     // Only the part after the fixed prefix is real user input; strip that,
     // not the whole string (which would re-count the prefix's own "91").
     final rest = raw.startsWith(_prefix) ? raw.substring(_prefix.length) : raw;
-    final digits = rest.replaceAll(RegExp(r'[^0-9]'), '');
+    final digitsRaw = rest.replaceAll(RegExp(r'[^0-9]'), '');
+    final digits = digitsRaw.length > 10 ? digitsRaw.substring(0, 10) : digitsRaw;
     final text = '$_prefix$digits';
     return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
   }
@@ -36,6 +39,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   String? _error;
 
   String get _mobile => _controller.text.replaceAll(' ', '');
+  int get _digitCount => _mobile.length - 3; // strip "+91"
 
   Future<void> _submit() async {
     final mobile = _mobile;
@@ -72,57 +76,63 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Trusted Neighbourhood Network',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Sign in with your mobile number',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _controller,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [_Plus91Formatter()],
-                  decoration: const InputDecoration(labelText: 'Mobile number'),
-                  onSubmitted: (_) => _submit(),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
-                ],
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  child: _busy
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Send OTP'),
-                ),
-                TextButton(
-                  onPressed: _busy ? null : _devLogin,
-                  child: const Text('Skip OTP — dev sign in'),
-                ),
-              ],
+    final role = ref.watch(roleProvider);
+
+    return AuthScaffold(
+      badge: role?.label ?? 'Trusted Neighbourhood Network',
+      hero: 'Verify your number',
+      sub: "We'll send a one-time code to confirm it's you.",
+      onBack: () {
+        ref.read(roleProvider.notifier).state = null;
+        context.go('/role');
+      },
+      body: [
+        const Text('Mobile number', style: fieldLabelStyle),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _controller,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [_Plus91Formatter()],
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: LC.ink),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: LC.card,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: LC.cardLine, width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: LC.cardLine, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: LC.accent, width: 1.5),
             ),
           ),
+          onSubmitted: (_) => _digitCount == 10 ? _submit() : null,
+          onChanged: (_) => setState(() {}),
         ),
+        const SizedBox(height: 6),
+        Text(
+          _error ?? 'Standard OTP rates may apply.',
+          style: _error != null ? helperErrorStyle : helperStyle,
+        ),
+      ],
+      footer: Column(
+        children: [
+          AuthPrimaryButton(
+            label: 'Send OTP',
+            busy: _busy,
+            onPressed: _digitCount == 10 ? _submit : null,
+          ),
+          TextButton(
+            onPressed: _busy ? null : _devLogin,
+            child: const Text('Skip OTP — dev sign in',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: LC.inkSoft)),
+          ),
+        ],
       ),
     );
   }
