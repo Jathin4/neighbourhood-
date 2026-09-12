@@ -30,16 +30,20 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   String? _error;
   Timer? _timer;
   int _secondsLeft = 30;
+  late String? _debugCode = widget.debugCode;
 
   @override
   void initState() {
     super.initState();
-    if (widget.debugCode != null) {
-      for (var i = 0; i < _codeLength && i < widget.debugCode!.length; i++) {
-        _controllers[i].text = widget.debugCode![i];
-      }
-    }
+    _fillDebugCode(widget.debugCode);
     _startTimer();
+  }
+
+  void _fillDebugCode(String? code) {
+    if (code == null) return;
+    for (var i = 0; i < _codeLength; i++) {
+      _controllers[i].text = i < code.length ? code[i] : '';
+    }
   }
 
   void _startTimer() {
@@ -72,7 +76,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Future<void> _resend() async {
     setState(() => _error = null);
     try {
-      await ref.read(authControllerProvider.notifier).requestOtp(widget.mobile);
+      final newDebugCode = await ref.read(authControllerProvider.notifier).requestOtp(widget.mobile);
+      for (final c in _controllers) {
+        c.clear();
+      }
+      setState(() => _debugCode = newDebugCode);
+      _fillDebugCode(newDebugCode);
       _startTimer();
     } on AppException catch (e) {
       setState(() => _error = e.message);
@@ -108,6 +117,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       badge: role?.label ?? 'Trusted Neighbourhood Network',
       hero: 'Enter the code',
       sub: 'We sent a code by SMS to +91 ${widget.mobile.replaceFirst('+91', '')}.',
+      onBack: () => context.pop(),
       body: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -118,8 +128,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         const SizedBox(height: 10),
         if (_error != null)
           Text(_error!, style: helperErrorStyle)
-        else if (widget.debugCode != null)
-          Text('Dev code: ${widget.debugCode}', style: helperStyle),
+        else if (_debugCode != null)
+          Text('Dev code: $_debugCode', style: helperStyle),
         const SizedBox(height: 8),
         _secondsLeft > 0
             ? Text('Resend code in ${_secondsLeft}s',

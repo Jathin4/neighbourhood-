@@ -65,6 +65,7 @@ void main() {
 
       expect(find.text('Super Admin'), findsOneWidget);
       expect(find.text('Dev code: 123456'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget); // back to the phone screen
       final verifyButton = find.widgetWithText(FilledButton, 'Verify & continue');
       expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
     });
