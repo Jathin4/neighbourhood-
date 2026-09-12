@@ -7,6 +7,7 @@ from app.deps import current_user
 from app.models.user import User
 from app.modules.identity import service
 from app.modules.identity.schemas import (
+    MyMembershipOut,
     OtpRequestIn,
     OtpRequestOut,
     OtpVerifyIn,
@@ -78,3 +79,11 @@ async def update_me(
         setattr(user, field, value)
     await db.flush()
     return user
+
+
+@users_router.get("/me/memberships", response_model=list[MyMembershipOut])
+async def get_my_memberships(
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_my_memberships(db, user.id)

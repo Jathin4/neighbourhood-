@@ -6,6 +6,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import rbac
 from app.enums import CommunityRole, MembershipStatus, VerificationStatus
 from app.errors import AppError, not_found
 from app.models.community import Community, Unit
@@ -175,6 +176,15 @@ async def update_membership(
     membership = await db.get(Membership, membership_id)
     if membership is None or membership.community_id != community_id:
         raise not_found("Membership")
+
+    if "capabilities" in changes:
+        extra = set(changes["capabilities"] or [])
+        if not extra.issubset(rbac.ASSIGNABLE_COMMITTEE_CAPS):
+            raise AppError(
+                "invalid_capabilities",
+                f"Capabilities must be a subset of {sorted(rbac.ASSIGNABLE_COMMITTEE_CAPS)}",
+                400,
+            )
 
     if changes.get("status") == MembershipStatus.active:
         membership.verification_status = VerificationStatus.verified

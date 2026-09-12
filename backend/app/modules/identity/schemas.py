@@ -51,3 +51,20 @@ class UserUpdateIn(BaseModel):
     email: EmailStr | None = None
     photo_url: str | None = Field(default=None, max_length=500)
     preferences: dict | None = None
+
+
+class MyMembershipOut(BaseModel):
+    """The caller's own membership, with the community name for display and
+    the capabilities their role/membership actually grants (§1: capability-
+    based, not UI-only role checks) — this is what drives what a Committee
+    Member's screen shows.
+    """
+
+    id: uuid.UUID
+    community_id: uuid.UUID
+    community_name: str
+    role: str
+    status: str
+    verification_status: str
+    unit_id: uuid.UUID | None
+    capabilities: list[str]

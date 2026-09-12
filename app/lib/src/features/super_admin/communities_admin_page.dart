@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/app_exception.dart';
 import '../../shared/communities.dart';
-import 'community_detail_screen.dart';
+import '../../shared/community_detail_screen.dart';
 import 'create_community_screen.dart';
 import 'panel_data.dart';
 

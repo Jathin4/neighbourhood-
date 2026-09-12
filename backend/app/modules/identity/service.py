@@ -4,8 +4,11 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import rbac
 from app.config import get_settings
 from app.errors import AppError
+from app.models.community import Community
+from app.models.membership import Membership
 from app.models.user import OtpChallenge, RefreshToken, User
 from app.modules.identity.otp_adapter import get_sms_sender
 from app.security import (
@@ -142,3 +145,29 @@ async def logout(db: AsyncSession, raw_token: str) -> None:
     if row is not None:
         row.revoked = True
         await db.flush()
+
+
+async def list_my_memberships(db: AsyncSession, user_id: uuid.UUID) -> list[dict]:
+    """Every community membership the caller holds, with its effective
+    capabilities (role's base caps + any extra granted ones) resolved —
+    this is what a Committee Member's screen keys off (§1).
+    """
+    rows = await db.execute(
+        select(Membership, Community.name)
+        .join(Community, Community.id == Membership.community_id)
+        .where(Membership.user_id == user_id)
+        .order_by(Community.name)
+    )
+    return [
+        {
+            "id": m.id,
+            "community_id": m.community_id,
+            "community_name": name,
+            "role": m.role,
+            "status": m.status,
+            "verification_status": m.verification_status,
+            "unit_id": m.unit_id,
+            "capabilities": sorted(rbac.effective_community_caps(m.role, m.capabilities)),
+        }
+        for m, name in rows.all()
+    ]

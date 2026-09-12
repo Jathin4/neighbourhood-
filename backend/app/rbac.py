@@ -45,6 +45,13 @@ COMMUNITY_ROLE_CAPS: dict[str, frozenset[str]] = {
     ),
 }
 
+# What a Community Admin may hand a Committee Member (§1: "configurable
+# permissions"). Deliberately excludes CAP_COMMUNITY_UPDATE — renaming/
+# deactivating the community itself stays admin-only.
+ASSIGNABLE_COMMITTEE_CAPS: frozenset[str] = frozenset(
+    {CAP_UNIT_MANAGE, CAP_MEMBER_MANAGE, CAP_RESIDENT_IMPORT}
+)
+
 
 def platform_can(platform_role: str | None, capability: str) -> bool:
     if platform_role == PlatformRole.super_admin:
@@ -52,6 +59,12 @@ def platform_can(platform_role: str | None, capability: str) -> bool:
     return capability in PLATFORM_ROLE_CAPS.get(platform_role or "", frozenset())
 
 
+def effective_community_caps(role: str, extra_caps: list[str] | None) -> frozenset[str]:
+    """A membership's full capability set: its role's base caps plus whatever
+    extra per-membership capabilities it's been granted (committee members).
+    """
+    return COMMUNITY_ROLE_CAPS.get(role, frozenset()) | set(extra_caps or [])
+
+
 def community_can(role: str, extra_caps: list[str] | None, capability: str) -> bool:
-    caps = COMMUNITY_ROLE_CAPS.get(role, frozenset()) | set(extra_caps or [])
-    return capability in caps
+    return capability in effective_community_caps(role, extra_caps)

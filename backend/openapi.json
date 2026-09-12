@@ -274,6 +274,36 @@
         ]
       }
     },
+    "/api/v1/users/me/memberships": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get My Memberships",
+        "operationId": "get_my_memberships_api_v1_users_me_memberships_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MyMembershipOut"
+                  },
+                  "type": "array",
+                  "title": "Response Get My Memberships Api V1 Users Me Memberships Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/communities": {
       "post": {
         "tags": [
@@ -1616,6 +1646,68 @@
         },
         "type": "object",
         "title": "MembershipUpdateIn"
+      },
+      "MyMembershipOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "community_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Community Id"
+          },
+          "community_name": {
+            "type": "string",
+            "title": "Community Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "verification_status": {
+            "type": "string",
+            "title": "Verification Status"
+          },
+          "unit_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Id"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "community_id",
+          "community_name",
+          "role",
+          "status",
+          "verification_status",
+          "unit_id",
+          "capabilities"
+        ],
+        "title": "MyMembershipOut",
+        "description": "The caller's own membership, with the community name for display and\nthe capabilities their role/membership actually grants (\u00a71: capability-\nbased, not UI-only role checks) \u2014 this is what drives what a Committee\nMember's screen shows."
       },
       "OtpRequestIn": {
         "properties": {
