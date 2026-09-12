@@ -70,6 +70,16 @@ class _RoleCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: LC.accentSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(role.icon, color: LC.accent, size: 22),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
