@@ -51,7 +51,17 @@ class GreetingHeader extends ConsumerWidget {
       data: (m) =>
           Text('Hello, ${m.name ?? m.mobile}', style: Theme.of(context).textTheme.titleLarge),
       loading: () => const LinearProgressIndicator(),
-      error: (e, _) => Text('$e'),
+      error: (e, _) => InkWell(
+        onTap: () => ref.invalidate(meProvider),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Text('$e')),
+            const SizedBox(width: 8),
+            const Icon(Icons.refresh, size: 18),
+          ],
+        ),
+      ),
     );
   }
 }
