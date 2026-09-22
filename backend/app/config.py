@@ -34,6 +34,11 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost", "http://localhost:3000", "http://localhost:8080"]
 
+    # Bootstraps (idempotently, on every startup) the one Super Admin account
+    # that logs in with email+password instead of phone OTP. Unset -> skipped.
+    superadmin_email: str | None = None
+    superadmin_password: str | None = None
+
     @property
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")

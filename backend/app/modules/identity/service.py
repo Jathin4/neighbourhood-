@@ -18,6 +18,7 @@ from app.security import (
     opaque_token,
     refresh_expiry,
     sha256,
+    verify_password,
 )
 
 settings = get_settings()
@@ -85,6 +86,21 @@ async def verify_otp(db: AsyncSession, mobile: str, code: str) -> tuple[User, st
         user = User(mobile=mobile)  # status defaults to 'pending'
         db.add(user)
         await db.flush()
+
+    access, refresh = await _issue_pair(db, user.id)
+    return user, access, refresh
+
+
+async def login_with_email(db: AsyncSession, email: str, password: str) -> tuple[User, str, str]:
+    """Email+password login — the Super Admin's own sign-in path, separate
+    from the phone-OTP flow every other role uses."""
+    user = await db.scalar(select(User).where(User.email == email))
+    # Compare against a well-formed dummy hash when the user doesn't exist so
+    # verify_password still does real PBKDF2 work either way — no timing
+    # signal that reveals whether the email exists.
+    stored_hash = user.password_hash if user and user.password_hash else f"{'0' * 32}${'0' * 64}"
+    if not verify_password(password, stored_hash) or user is None or not user.password_hash:
+        raise AppError("invalid_credentials", "Incorrect email or password", 401)
 
     access, refresh = await _issue_pair(db, user.id)
     return user, access, refresh

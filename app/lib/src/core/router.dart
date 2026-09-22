@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/auth_controller.dart';
+import '../features/auth/email_login_screen.dart';
 import '../features/auth/otp_screen.dart';
 import '../features/auth/phone_screen.dart';
 import '../features/committee_member/committee_member_shell.dart';
@@ -30,8 +31,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (role == null) return atRoleSelect ? null : '/role';
 
       final signedIn = auth == AuthStatus.signedIn;
-      final atLogin = state.matchedLocation == '/login' || state.matchedLocation == '/otp';
-      if (!signedIn) return atLogin ? null : '/login';
+      // Super Admin signs in with email+password; every other role uses phone OTP.
+      final loginPath = role == AppRole.superAdmin ? '/login-email' : '/login';
+      final atLogin = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/login-email' ||
+          state.matchedLocation == '/otp';
+      if (!signedIn) return atLogin ? null : loginPath;
       if (atLogin || atRoleSelect) return '/';
       return null;
     },
@@ -43,6 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/login', builder: (_, __) => const PhoneScreen()),
+      GoRoute(path: '/login-email', builder: (_, __) => const EmailLoginScreen()),
       GoRoute(
         path: '/otp',
         builder: (_, state) {

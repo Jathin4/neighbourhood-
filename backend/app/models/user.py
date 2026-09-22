@@ -12,8 +12,11 @@ from app.models.base import PkMixin, TimestampMixin
 class User(PkMixin, TimestampMixin, Base):
     __tablename__ = "users"
 
-    mobile: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    # Nullable: email+password accounts (Super Admin) have no phone number.
+    mobile: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    # Set only for email+password accounts; OTP accounts never have one.
+    password_hash: Mapped[str | None] = mapped_column(String(200))
     name: Mapped[str | None] = mapped_column(String(120))
     photo_url: Mapped[str | None] = mapped_column(String(500))
     status: Mapped[str] = mapped_column(String(20), default=AccountStatus.pending)

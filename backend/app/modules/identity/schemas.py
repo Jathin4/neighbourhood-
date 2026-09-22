@@ -21,6 +21,11 @@ class OtpVerifyIn(BaseModel):
     code: str = Field(min_length=4, max_length=8)
 
 
+class EmailLoginIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=200)
+
+
 class RefreshIn(BaseModel):
     refresh_token: str
 
@@ -36,7 +41,7 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    mobile: str
+    mobile: str | None
     email: str | None
     name: str | None
     photo_url: str | None

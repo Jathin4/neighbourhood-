@@ -10,7 +10,7 @@ class UserAdminOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    mobile: str
+    mobile: str | None
     name: str | None
     email: str | None
     status: str

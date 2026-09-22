@@ -30,6 +30,11 @@ class AuthController extends Notifier<AuthStatus> {
     state = AuthStatus.signedIn;
   }
 
+  Future<void> loginWithEmail(String email, String password) async {
+    await ref.read(authRepositoryProvider).loginWithEmail(email, password);
+    state = AuthStatus.signedIn;
+  }
+
   Future<void> devLogin(String mobile) async {
     await ref.read(authRepositoryProvider).devLogin(mobile);
     state = AuthStatus.signedIn;

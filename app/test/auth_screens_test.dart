@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tnn_app/src/features/auth/email_login_screen.dart';
 import 'package:tnn_app/src/features/auth/otp_screen.dart';
 import 'package:tnn_app/src/features/auth/phone_screen.dart';
 import 'package:tnn_app/src/shared/role.dart';
@@ -91,6 +92,39 @@ void main() {
       await tester.enterText(boxes.at(5), '1');
       await tester.pump();
       expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+    });
+  });
+
+  group('EmailLoginScreen', () {
+    Future<void> pump(WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [roleProvider.overrideWith((ref) => AppRole.superAdmin)],
+          child: const MaterialApp(home: EmailLoginScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows the Super Admin badge and back button', (tester) async {
+      await pump(tester);
+      expect(find.text('Super Admin'), findsOneWidget);
+      expect(find.text('Staff sign in'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+    });
+
+    testWidgets('Continue stays disabled until both fields are filled', (tester) async {
+      await pump(tester);
+      final button = find.widgetWithText(FilledButton, 'Continue');
+      expect(tester.widget<FilledButton>(button).onPressed, isNull);
+
+      await tester.enterText(find.byType(TextField).first, 'admin@tnnetwork.in');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(button).onPressed, isNull); // password still empty
+
+      await tester.enterText(find.byType(TextField).last, 'secret');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
     });
   });
 }

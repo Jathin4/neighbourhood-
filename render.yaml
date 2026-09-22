@@ -21,3 +21,7 @@ services:
         generateValue: true    # Render generates a strong random value
       - key: DATABASE_URL
         sync: false            # paste the Supabase connection string at deploy time
+      - key: SUPERADMIN_EMAIL
+        sync: false            # bootstraps the one email+password Super Admin account
+      - key: SUPERADMIN_PASSWORD
+        sync: false

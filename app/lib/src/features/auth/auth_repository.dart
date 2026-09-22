@@ -41,6 +41,22 @@ class AuthRepository {
     }
   }
 
+  /// Super Admin's own sign-in path — email+password, not phone OTP.
+  Future<void> loginWithEmail(String email, String password) async {
+    try {
+      final res = await _api.raw.post(
+        '/auth/login/email',
+        data: {'email': email, 'password': password},
+      );
+      await _tokens.save(
+        access: res.data['access_token'] as String,
+        refresh: res.data['refresh_token'] as String,
+      );
+    } on DioException catch (e) {
+      throw AppException.fromDio(e);
+    }
+  }
+
   Future<void> verifyOtp(String mobile, String code) async {
     try {
       final res = await _api.raw.post(

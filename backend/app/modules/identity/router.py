@@ -7,6 +7,7 @@ from app.deps import current_user
 from app.models.user import User
 from app.modules.identity import service
 from app.modules.identity.schemas import (
+    EmailLoginIn,
     MyMembershipOut,
     OtpRequestIn,
     OtpRequestOut,
@@ -40,6 +41,12 @@ async def otp_request(body: OtpRequestIn, db: AsyncSession = Depends(get_db)):
 @auth_router.post("/otp/verify", response_model=TokenPair)
 async def otp_verify(body: OtpVerifyIn, db: AsyncSession = Depends(get_db)):
     _, access, refresh = await service.verify_otp(db, body.mobile, body.code)
+    return _pair(access, refresh)
+
+
+@auth_router.post("/login/email", response_model=TokenPair)
+async def login_email(body: EmailLoginIn, db: AsyncSession = Depends(get_db)):
+    _, access, refresh = await service.login_with_email(db, body.email, body.password)
     return _pair(access, refresh)
 
 
