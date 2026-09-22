@@ -54,35 +54,6 @@ class ServiceCategory {
   final String id, cat, name, blurb;
 }
 
-class Booking {
-  const Booking({
-    required this.id,
-    required this.cat,
-    required this.title,
-    required this.provider,
-    required this.community,
-    required this.when,
-    required this.amount,
-    required this.status,
-    required this.statusLabel,
-  });
-
-  final String id, cat, title, provider, community, when, amount, statusLabel;
-  final TStatus status;
-
-  Booking copyWith({TStatus? status, String? statusLabel}) => Booking(
-        id: id,
-        cat: cat,
-        title: title,
-        provider: provider,
-        community: community,
-        when: when,
-        amount: amount,
-        status: status ?? this.status,
-        statusLabel: statusLabel ?? this.statusLabel,
-      );
-}
-
 class SupportTicket {
   const SupportTicket(this.id, this.subject, this.status, this.statusLabel, this.date);
   final String id, subject, statusLabel, date;
@@ -95,7 +66,6 @@ class ResidentData {
     required this.issues,
     required this.events,
     required this.services,
-    required this.bookings,
     required this.support,
   });
 
@@ -103,14 +73,12 @@ class ResidentData {
   final List<IssueTicket> issues;
   final List<EventItem> events;
   final List<ServiceCategory> services;
-  final List<Booking> bookings;
   final List<SupportTicket> support;
 
   ResidentData copyWith({
     List<Notice>? notices,
     List<IssueTicket>? issues,
     List<EventItem>? events,
-    List<Booking>? bookings,
     List<SupportTicket>? support,
   }) =>
       ResidentData(
@@ -118,7 +86,6 @@ class ResidentData {
         issues: issues ?? this.issues,
         events: events ?? this.events,
         services: services,
-        bookings: bookings ?? this.bookings,
         support: support ?? this.support,
       );
 
@@ -127,7 +94,6 @@ class ResidentData {
         issues: List.of(_seedIssues),
         events: List.of(_seedEvents),
         services: _seedServices,
-        bookings: List.of(_seedBookings),
         support: List.of(_seedSupport),
       );
 }
@@ -165,34 +131,6 @@ class ResidentController extends Notifier<ResidentData> {
 
   void toggleRsvp(String id) => state = state.copyWith(
         events: [for (final e in state.events) e.id == id ? e.toggleRsvp() : e],
-      );
-
-  void requestService(ServiceCategory category) => state = state.copyWith(
-        bookings: [
-          Booking(
-            id: 'BK-${3000 + state.bookings.length}',
-            cat: category.cat,
-            title: category.name,
-            provider: 'Matching a verified provider…',
-            community: 'Your community',
-            when: 'Awaiting provider response',
-            amount: '—',
-            status: TStatus.blue,
-            statusLabel: 'Requested',
-          ),
-          ...state.bookings,
-        ],
-      );
-
-  void cancelBooking(String id) => state = state.copyWith(
-        bookings: state.bookings.where((b) => b.id != id).toList(),
-      );
-
-  void confirmCompletion(String id) => state = state.copyWith(
-        bookings: [
-          for (final b in state.bookings)
-            b.id == id ? b.copyWith(status: TStatus.success, statusLabel: 'Completed') : b,
-        ],
       );
 
   void addSupportTicket(String subject) => state = state.copyWith(
@@ -272,42 +210,6 @@ const _seedServices = [
   ServiceCategory('SVC-4', 'fan', 'AC Technician', 'Servicing, gas top-up, repair'),
   ServiceCategory('SVC-5', 'spray', 'Pest Control', 'Full-flat and kitchen treatment'),
   ServiceCategory('SVC-6', 'build', 'Cleaning', 'Deep cleaning, sofa & carpet'),
-];
-
-const _seedBookings = [
-  Booking(
-    id: 'BK-2391',
-    cat: 'bolt',
-    title: 'Switchboard repair',
-    provider: 'Ramesh Kumar Electricals',
-    community: 'Green Meadows Residency',
-    when: 'Today, 5 PM',
-    amount: '₹400',
-    status: TStatus.amber,
-    statusLabel: 'Scheduled',
-  ),
-  Booking(
-    id: 'BK-2378',
-    cat: 'fan',
-    title: 'Split AC servicing',
-    provider: 'CoolFix AC Services',
-    community: 'Green Meadows Residency',
-    when: 'Yesterday, 11 AM',
-    amount: '₹900',
-    status: TStatus.success,
-    statusLabel: 'Awaiting confirmation',
-  ),
-  Booking(
-    id: 'BK-2340',
-    cat: 'wrench',
-    title: 'Kitchen tap replacement',
-    provider: 'Suresh Plumbing Works',
-    community: 'Green Meadows Residency',
-    when: '3 Sep',
-    amount: '₹350',
-    status: TStatus.success,
-    statusLabel: 'Completed',
-  ),
 ];
 
 const _seedSupport = [

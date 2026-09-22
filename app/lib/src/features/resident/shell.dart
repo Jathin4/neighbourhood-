@@ -1,6 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api_client.dart';
+import '../../core/app_exception.dart';
+import '../../shared/marketplace.dart';
 import '../../shared/me.dart';
 import '../../shared/ticket_ui.dart';
 import '../auth/auth_controller.dart';
@@ -116,20 +120,6 @@ class _ResidentShellState extends ConsumerState<ResidentShell> {
 
 EdgeInsets get _bodyPad => const EdgeInsets.fromLTRB(16, 16, 16, 24);
 
-Widget _fill(String label, Color color, VoidCallback onTap, {Color fg = Colors.white}) => Expanded(
-      child: FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: fg,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3))),
-          textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
-        ),
-        child: Text(label),
-      ),
-    );
-
 Widget _outline(String label, VoidCallback onTap) => Expanded(
       child: OutlinedButton(
         onPressed: onTap,
@@ -155,6 +145,11 @@ class _HomeTab extends ConsumerWidget {
     final ctrl = ref.read(residentProvider.notifier);
     final unreadNotices = data.notices.where((n) => !n.read).length;
     final openIssues = data.issues.where((i) => i.status != TStatus.success).length;
+    final activeBookings = ref.watch(myBookingsProvider).maybeWhen(
+          data: (list) =>
+              list.where((b) => b.status == 'requested' || b.status == 'accepted').length,
+          orElse: () => 0,
+        );
 
     return ListView(
       padding: _bodyPad,
@@ -163,7 +158,7 @@ class _HomeTab extends ConsumerWidget {
           StatChip('$unreadNotices', 'Unread notices', highlight: true),
           StatChip('$openIssues', 'Open issues'),
           StatChip('${data.events.length}', 'Upcoming events'),
-          StatChip('${data.bookings.length}', 'Active bookings'),
+          StatChip('$activeBookings', 'Active bookings'),
         ]),
         SectionTitle(
           'Notices',
@@ -221,10 +216,22 @@ class _NoticeTile extends ConsumerWidget {
 class _ServicesTab extends ConsumerWidget {
   const _ServicesTab();
 
+  Future<void> _request(BuildContext context, WidgetRef ref, ServiceCategory s) async {
+    try {
+      await ref.read(apiClientProvider).raw.post('/bookings', data: {
+        'category': s.name,
+        'title': s.name,
+      });
+      ref.invalidate(myBookingsProvider);
+      if (context.mounted) showSnack(context, 'Request sent — providers will respond shortly');
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final services = ref.watch(residentProvider.select((d) => d.services));
-    final ctrl = ref.read(residentProvider.notifier);
 
     return ListView(
       padding: _bodyPad,
@@ -254,10 +261,7 @@ class _ServicesTab extends ConsumerWidget {
                   ),
                 ),
                 FilledButton(
-                  onPressed: () {
-                    ctrl.requestService(s);
-                    showSnack(context, 'Request sent — providers will respond shortly');
-                  },
+                  onPressed: () => _request(context, ref, s),
                   style: FilledButton.styleFrom(
                     backgroundColor: PC.navy,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -281,17 +285,21 @@ class _BookingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookings = ref.watch(residentProvider.select((d) => d.bookings));
+    final bookings = ref.watch(myBookingsProvider);
     return ListView(
       padding: _bodyPad,
       children: [
         const Text('Track requests from booking to completion.',
             style: TextStyle(fontSize: 11.5, color: PC.inkSoft)),
         const SizedBox(height: 12),
-        if (bookings.isEmpty)
-          const _Empty('No bookings yet — request a service from the Services tab.')
-        else
-          for (final b in bookings) _BookingTile(b),
+        bookings.when(
+          loading: () => const Center(child: Padding(
+              padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+          error: (e, _) => Text('$e'),
+          data: (list) => list.isEmpty
+              ? const _Empty('No bookings yet — request a service from the Services tab.')
+              : Column(children: [for (final b in list) _BookingTile(b)]),
+        ),
       ],
     );
   }
@@ -299,45 +307,49 @@ class _BookingsTab extends ConsumerWidget {
 
 class _BookingTile extends ConsumerWidget {
   const _BookingTile(this.booking);
-  final Booking booking;
+  final MarketBooking booking;
+
+  Future<void> _act(BuildContext context, WidgetRef ref, String action) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .raw
+          .patch('/bookings/${booking.id}', data: {'action': action});
+      ref.invalidate(myBookingsProvider);
+      if (context.mounted) {
+        showSnack(context, action == 'cancel' ? 'Booking cancelled' : 'Updated');
+      }
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ctrl = ref.read(residentProvider.notifier);
-    final pillKind = switch (booking.status) {
+    final (status, statusLabel) = bookingStatusInfo(booking.status);
+    final pillKind = switch (status) {
       TStatus.success => PillKind.green,
       TStatus.amber => PillKind.amber,
       TStatus.danger => PillKind.brick,
       TStatus.blue => PillKind.blue,
     };
-    final awaitingConfirmation = booking.statusLabel == 'Awaiting confirmation';
-    final cancellable = booking.statusLabel == 'Requested' || booking.statusLabel == 'Scheduled';
+    final cancellable = booking.status == 'requested' || booking.status == 'accepted';
 
     return TicketCard(
-      cat: booking.cat,
-      status: booking.status,
-      id: booking.id,
+      cat: marketCategoryIcon[booking.category] ?? 'build',
+      status: status,
+      id: booking.category,
       title: booking.title,
-      meta: [booking.provider, booking.community, '${booking.when} · ${booking.amount}'],
-      trailing: Pill(booking.statusLabel, kind: pillKind),
-      actions: Row(
-        children: [
-          _outline('View details', () => showSnack(context, 'Opening ${booking.id}')),
-          if (awaitingConfirmation) ...[
-            const SizedBox(width: 6),
-            _fill('Confirm & rate', PC.marigold, () {
-              ctrl.confirmCompletion(booking.id);
-              showSnack(context, 'Thanks! Booking marked completed.');
-            }, fg: const Color(0xFF28210A)),
-          ] else if (cancellable) ...[
-            const SizedBox(width: 6),
-            _outline('Cancel', () {
-              ctrl.cancelBooking(booking.id);
-              showSnack(context, 'Booking cancelled');
-            }),
-          ],
-        ],
-      ),
+      meta: [
+        booking.providerName ?? 'Matching a verified provider…',
+        fmtBookingWhen(booking.createdAt),
+      ],
+      trailing: Pill(statusLabel, kind: pillKind),
+      actions: cancellable
+          ? Row(children: [
+              _outline('Cancel', () => _act(context, ref, 'cancel')),
+            ])
+          : null,
     );
   }
 }

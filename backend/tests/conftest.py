@@ -76,6 +76,11 @@ async def resident_token(client):
 
 
 @pytest_asyncio.fixture
+async def provider_token(client):
+    return await _login(client, "+919000000002")
+
+
+@pytest_asyncio.fixture
 async def superadmin_token(client, db):
     from sqlalchemy import select
 

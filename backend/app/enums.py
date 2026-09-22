@@ -35,3 +35,10 @@ class VerificationStatus(StrEnum):
     unverified = "unverified"
     verified = "verified"
     rejected = "rejected"
+
+
+class BookingStatus(StrEnum):
+    requested = "requested"
+    accepted = "accepted"
+    completed = "completed"
+    cancelled = "cancelled"

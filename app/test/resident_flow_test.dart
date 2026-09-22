@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tnn_app/src/features/resident/data.dart';
 import 'package:tnn_app/src/features/resident/shell.dart';
+import 'package:tnn_app/src/shared/marketplace.dart';
 import 'package:tnn_app/src/shared/ticket_ui.dart';
 
 void main() {
@@ -14,11 +15,10 @@ void main() {
     ResidentController ctrl() => c.read(residentProvider.notifier);
     ResidentData data() => c.read(residentProvider);
 
-    test('seeds notices, issues, events and bookings', () {
+    test('seeds notices, issues and events', () {
       expect(data().notices, isNotEmpty);
       expect(data().issues, isNotEmpty);
       expect(data().events, isNotEmpty);
-      expect(data().bookings, isNotEmpty);
     });
 
     test('marking a notice read flips its read flag only', () {
@@ -52,28 +52,6 @@ void main() {
       expect(data().events.first.rsvped, was);
     });
 
-    test('requesting a service adds a booking in Requested state', () {
-      final before = data().bookings.length;
-      ctrl().requestService(data().services.first);
-      expect(data().bookings.length, before + 1);
-      expect(data().bookings.first.statusLabel, 'Requested');
-    });
-
-    test('cancelling a booking removes it', () {
-      ctrl().requestService(data().services.first);
-      final id = data().bookings.first.id;
-      ctrl().cancelBooking(id);
-      expect(data().bookings.any((b) => b.id == id), isFalse);
-    });
-
-    test('confirming completion flips status to success', () {
-      final awaiting = data().bookings.firstWhere((b) => b.statusLabel == 'Awaiting confirmation');
-      ctrl().confirmCompletion(awaiting.id);
-      final after = data().bookings.firstWhere((b) => b.id == awaiting.id);
-      expect(after.status, TStatus.success);
-      expect(after.statusLabel, 'Completed');
-    });
-
     test('raising a support ticket prepends it', () {
       final before = data().support.length;
       ctrl().addSupportTicket('Refund not received');
@@ -82,7 +60,7 @@ void main() {
     });
   });
 
-  testWidgets('shell switches tabs and requesting a service creates a booking', (tester) async {
+  testWidgets('shell switches tabs', (tester) async {
     await tester.binding.setSurfaceSize(const Size(400, 920));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -97,12 +75,67 @@ void main() {
     await tester.tap(find.text('Services'));
     await tester.pumpAndSettle();
     expect(find.text('Electrician'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('Request').first);
+  testWidgets('bookings tab renders a live (backend) booking with its status', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 920));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final booking = MarketBooking(
+      id: 'b1',
+      providerUserId: null,
+      category: 'Electrician',
+      title: 'Electrician',
+      status: 'requested',
+      createdAt: DateTime(2026, 9, 22, 16, 45),
+      residentName: 'Test Resident',
+      providerName: null,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [myBookingsProvider.overrideWith((ref) async => [booking])],
+        child: const MaterialApp(home: ResidentShell()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Bookings'));
     await tester.pumpAndSettle();
+
     expect(find.text('Requested'), findsOneWidget);
+    expect(find.text('Matching a verified provider…'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
+
+  testWidgets('an accepted booking shows the provider name and no cancel button', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 920));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final booking = MarketBooking(
+      id: 'b1',
+      providerUserId: 'p1',
+      category: 'Electrician',
+      title: 'Electrician',
+      status: 'completed',
+      createdAt: DateTime(2026, 9, 22, 16, 45),
+      residentName: 'Test Resident',
+      providerName: 'Ramesh Kumar Electricals',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [myBookingsProvider.overrideWith((ref) async => [booking])],
+        child: const MaterialApp(home: ResidentShell()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bookings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Completed'), findsOneWidget);
+    expect(find.text('Ramesh Kumar Electricals'), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
   });
 }

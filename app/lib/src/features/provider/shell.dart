@@ -1,10 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api_client.dart';
+import '../../core/app_exception.dart';
+import '../../shared/marketplace.dart';
+import '../../shared/ticket_ui.dart';
 import '../auth/auth_controller.dart';
 import 'data.dart';
 import 'sub_screens.dart';
-import '../../shared/ticket_ui.dart';
 
 class ProviderShell extends ConsumerStatefulWidget {
   const ProviderShell({super.key});
@@ -33,7 +37,12 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
 
   @override
   Widget build(BuildContext context) {
-    final leadCount = ref.watch(portalProvider.select((d) => d.leads.length));
+    final mockLeadCount = ref.watch(portalProvider.select((d) => d.leads.length));
+    final realLeadCount = ref.watch(myLeadsProvider).maybeWhen(
+          data: (list) => list.length,
+          orElse: () => 0,
+        );
+    final leadCount = mockLeadCount + realLeadCount;
 
     return Scaffold(
       backgroundColor: PC.bg,
@@ -213,6 +222,7 @@ class _LeadsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final leads = ref.watch(portalProvider.select((d) => d.leads));
+    final realLeads = ref.watch(myLeadsProvider);
     return ListView(
       padding: _bodyPad,
       children: [
@@ -223,7 +233,57 @@ class _LeadsTab extends ConsumerWidget {
           const _Empty('No new leads — new requests appear here.')
         else
           for (final l in leads) _LeadTile(l),
+        realLeads.when(
+          loading: () => const SizedBox.shrink(),
+          error: (e, _) => const SizedBox.shrink(),
+          data: (list) => list.isEmpty
+              ? const SizedBox.shrink()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionTitle('Live requests from residents'),
+                    for (final b in list) _RealLeadTile(b),
+                  ],
+                ),
+        ),
       ],
+    );
+  }
+}
+
+class _RealLeadTile extends ConsumerWidget {
+  const _RealLeadTile(this.booking);
+  final MarketBooking booking;
+
+  Future<void> _accept(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .raw
+          .patch('/bookings/${booking.id}', data: {'action': 'accept'});
+      ref.invalidate(myLeadsProvider);
+      ref.invalidate(myBookingsProvider);
+      if (context.mounted) showSnack(context, 'Booking confirmed — resident notified');
+    } on DioException catch (e) {
+      ref.invalidate(myLeadsProvider);
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TicketCard(
+      cat: marketCategoryIcon[booking.category] ?? 'build',
+      status: TStatus.amber,
+      id: booking.category,
+      title: booking.title,
+      meta: [booking.residentName, fmtBookingWhen(booking.createdAt)],
+      trailing: const Pill('New', kind: PillKind.amber),
+      actions: Row(
+        children: [
+          _fill('Accept', PC.navy, () => _accept(context, ref)),
+        ],
+      ),
     );
   }
 }
@@ -275,6 +335,7 @@ class _BookingsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(portalProvider.select((d) => d.bookings));
+    final realBookings = ref.watch(myBookingsProvider);
     return ListView(
       padding: _bodyPad,
       children: [
@@ -282,7 +343,63 @@ class _BookingsTab extends ConsumerWidget {
             style: TextStyle(fontSize: 11.5, color: PC.inkSoft)),
         const SizedBox(height: 12),
         for (final b in bookings) _BookingTile(b),
+        realBookings.when(
+          loading: () => const SizedBox.shrink(),
+          error: (e, _) => const SizedBox.shrink(),
+          data: (list) => list.isEmpty
+              ? const SizedBox.shrink()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionTitle('Live jobs from residents'),
+                    for (final b in list) _RealBookingTile(b),
+                  ],
+                ),
+        ),
       ],
+    );
+  }
+}
+
+class _RealBookingTile extends ConsumerWidget {
+  const _RealBookingTile(this.booking);
+  final MarketBooking booking;
+
+  Future<void> _complete(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .raw
+          .patch('/bookings/${booking.id}', data: {'action': 'complete'});
+      ref.invalidate(myBookingsProvider);
+      if (context.mounted) showSnack(context, 'Job marked complete');
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (status, statusLabel) = bookingStatusInfo(booking.status);
+    final pillKind = switch (status) {
+      TStatus.success => PillKind.green,
+      TStatus.amber => PillKind.amber,
+      TStatus.danger => PillKind.brick,
+      TStatus.blue => PillKind.blue,
+    };
+    return TicketCard(
+      cat: marketCategoryIcon[booking.category] ?? 'build',
+      status: status,
+      id: booking.category,
+      title: booking.title,
+      meta: [booking.residentName, fmtBookingWhen(booking.createdAt)],
+      trailing: Pill(statusLabel, kind: pillKind),
+      actions: status == TStatus.amber
+          ? Row(children: [
+              _fill('Mark complete', PC.marigold, () => _complete(context, ref),
+                  fg: const Color(0xFF28210A)),
+            ])
+          : null,
     );
   }
 }
