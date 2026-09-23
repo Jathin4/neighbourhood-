@@ -3,8 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tnn_app/src/features/resident/data.dart';
 import 'package:tnn_app/src/features/resident/shell.dart';
+import 'package:tnn_app/src/shared/community_content.dart';
 import 'package:tnn_app/src/shared/marketplace.dart';
-import 'package:tnn_app/src/shared/ticket_ui.dart';
+import 'package:tnn_app/src/shared/my_memberships.dart';
+
+MyMembership _activeMembership({String communityId = 'c1', String communityName = 'Green Meadows'}) =>
+    MyMembership(
+      id: 'm1',
+      communityId: communityId,
+      communityName: communityName,
+      role: 'resident',
+      status: 'active',
+      verificationStatus: 'verified',
+      capabilities: const [],
+    );
 
 void main() {
   group('ResidentController', () {
@@ -15,41 +27,8 @@ void main() {
     ResidentController ctrl() => c.read(residentProvider.notifier);
     ResidentData data() => c.read(residentProvider);
 
-    test('seeds notices, issues and events', () {
-      expect(data().notices, isNotEmpty);
-      expect(data().issues, isNotEmpty);
-      expect(data().events, isNotEmpty);
-    });
-
-    test('marking a notice read flips its read flag only', () {
-      final id = data().notices.first.id;
-      ctrl().markNoticeRead(id);
-      expect(data().notices.firstWhere((n) => n.id == id).read, isTrue);
-    });
-
-    test('raising an issue prepends a new open ticket', () {
-      final before = data().issues.length;
-      ctrl().raiseIssue('Plumbing', 'Leaking pipe');
-      expect(data().issues.length, before + 1);
-      expect(data().issues.first.title, 'Leaking pipe');
-      expect(data().issues.first.status, TStatus.blue);
-    });
-
-    test('reopening a resolved issue flips it back to open', () {
-      final resolved = data().issues.firstWhere((i) => i.status == TStatus.success);
-      ctrl().reopenIssue(resolved.id);
-      final after = data().issues.firstWhere((i) => i.id == resolved.id);
-      expect(after.statusLabel, 'Reopened');
-      expect(after.status, TStatus.blue);
-    });
-
-    test('toggling RSVP flips and flips back', () {
-      final id = data().events.first.id;
-      final was = data().events.first.rsvped;
-      ctrl().toggleRsvp(id);
-      expect(data().events.first.rsvped, !was);
-      ctrl().toggleRsvp(id);
-      expect(data().events.first.rsvped, was);
+    test('seeds a services catalog', () {
+      expect(data().services, isNotEmpty);
     });
 
     test('raising a support ticket prepends it', () {
@@ -60,21 +39,75 @@ void main() {
     });
   });
 
-  testWidgets('shell switches tabs', (tester) async {
+  testWidgets('with no active community, Home shows the "not part of a community" state',
+      (tester) async {
     await tester.binding.setSurfaceSize(const Size(400, 920));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: ResidentShell())),
+      ProviderScope(
+        overrides: [myActiveMembershipProvider.overrideWithValue(const AsyncData(null))],
+        child: const MaterialApp(home: ResidentShell()),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Home'), findsWidgets);
-    expect(find.text('Notices'), findsWidgets);
+    expect(find.textContaining('not part of a community'), findsOneWidget);
 
     await tester.tap(find.text('Services'));
     await tester.pumpAndSettle();
     expect(find.text('Electrician'), findsOneWidget);
+  });
+
+  testWidgets('Home renders live notices, issues and events for my community', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 920));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final membership = _activeMembership();
+    final notice = CommunityNotice(
+      id: 'n1',
+      title: 'Water supply interruption',
+      body: 'Maintenance work on the main line.',
+      priority: 'critical',
+      createdAt: DateTime(2026, 9, 22, 10),
+      read: false,
+    );
+    final issue = CommunityIssue(
+      id: 'i1',
+      communityId: membership.communityId,
+      raisedByName: 'Test Resident',
+      category: 'issue',
+      title: 'Lift making a grinding noise',
+      status: 'in_progress',
+      createdAt: DateTime(2026, 9, 20),
+    );
+    final event = CommunityEvent(
+      id: 'e1',
+      title: 'Diwali cultural night',
+      startsAt: DateTime(2026, 10, 20, 19),
+      location: 'Community hall',
+      rsvpCount: 3,
+      rsvped: false,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myActiveMembershipProvider.overrideWithValue(AsyncData(membership)),
+          noticesProvider(membership.communityId).overrideWith((ref) async => [notice]),
+          eventsProvider(membership.communityId).overrideWith((ref) async => [event]),
+          myIssuesProvider.overrideWith((ref) async => [issue]),
+        ],
+        child: const MaterialApp(home: ResidentShell()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Water supply interruption'), findsOneWidget);
+    expect(find.text('Lift making a grinding noise'), findsOneWidget);
+    expect(find.text('Diwali cultural night'), findsOneWidget);
+    expect(find.text('Mark as read'), findsOneWidget);
   });
 
   testWidgets('bookings tab renders a live (backend) booking with its status', (tester) async {

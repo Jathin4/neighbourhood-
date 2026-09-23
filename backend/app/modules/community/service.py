@@ -3,13 +3,14 @@ import io
 import re
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import rbac
 from app.enums import CommunityRole, MembershipStatus, VerificationStatus
 from app.errors import AppError, not_found
 from app.models.community import Community, Unit
+from app.models.community_content import Event, EventRsvp, Notice, NoticeRead
 from app.models.membership import Membership
 from app.models.user import User
 from app.modules.community.schemas import ImportRowResult, ImportSummary
@@ -272,3 +273,113 @@ async def import_residents_csv(
         errors=errors,
         results=results,
     )
+
+
+async def create_notice(
+    db: AsyncSession, community_id: uuid.UUID, created_by: uuid.UUID, data: dict
+) -> Notice:
+    notice = Notice(community_id=community_id, created_by=created_by, **data)
+    db.add(notice)
+    await db.flush()
+    return notice
+
+
+async def list_notices(db: AsyncSession, community_id: uuid.UUID, user_id: uuid.UUID) -> list[dict]:
+    notices = list(
+        await db.scalars(
+            select(Notice)
+            .where(Notice.community_id == community_id)
+            .order_by(Notice.created_at.desc())
+        )
+    )
+    if not notices:
+        return []
+    read_ids = set(
+        await db.scalars(
+            select(NoticeRead.notice_id).where(
+                NoticeRead.user_id == user_id,
+                NoticeRead.notice_id.in_([n.id for n in notices]),
+            )
+        )
+    )
+    return [
+        {
+            "id": n.id,
+            "title": n.title,
+            "body": n.body,
+            "priority": n.priority,
+            "created_at": n.created_at,
+            "read": n.id in read_ids,
+        }
+        for n in notices
+    ]
+
+
+async def mark_notice_read(db: AsyncSession, notice_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    existing = await db.scalar(
+        select(NoticeRead).where(NoticeRead.notice_id == notice_id, NoticeRead.user_id == user_id)
+    )
+    if existing is None:
+        db.add(NoticeRead(notice_id=notice_id, user_id=user_id))
+        await db.flush()
+
+
+async def create_event(
+    db: AsyncSession, community_id: uuid.UUID, created_by: uuid.UUID, data: dict
+) -> Event:
+    event = Event(community_id=community_id, created_by=created_by, **data)
+    db.add(event)
+    await db.flush()
+    return event
+
+
+async def list_events(db: AsyncSession, community_id: uuid.UUID, user_id: uuid.UUID) -> list[dict]:
+    events = list(
+        await db.scalars(
+            select(Event).where(Event.community_id == community_id).order_by(Event.starts_at)
+        )
+    )
+    if not events:
+        return []
+    event_ids = [e.id for e in events]
+    counts = dict(
+        (
+            await db.execute(
+                select(EventRsvp.event_id, func.count())
+                .where(EventRsvp.event_id.in_(event_ids))
+                .group_by(EventRsvp.event_id)
+            )
+        ).all()
+    )
+    mine = set(
+        await db.scalars(
+            select(EventRsvp.event_id).where(
+                EventRsvp.user_id == user_id, EventRsvp.event_id.in_(event_ids)
+            )
+        )
+    )
+    return [
+        {
+            "id": e.id,
+            "title": e.title,
+            "starts_at": e.starts_at,
+            "location": e.location,
+            "rsvp_count": counts.get(e.id, 0),
+            "rsvped": e.id in mine,
+        }
+        for e in events
+    ]
+
+
+async def toggle_rsvp(db: AsyncSession, event_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    """Returns the new rsvped state."""
+    existing = await db.scalar(
+        select(EventRsvp).where(EventRsvp.event_id == event_id, EventRsvp.user_id == user_id)
+    )
+    if existing is not None:
+        await db.delete(existing)
+        await db.flush()
+        return False
+    db.add(EventRsvp(event_id=event_id, user_id=user_id))
+    await db.flush()
+    return True

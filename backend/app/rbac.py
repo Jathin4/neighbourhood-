@@ -15,6 +15,9 @@ CAP_MEMBER_MANAGE = "community.member.manage"
 CAP_RESIDENT_IMPORT = "community.resident.import"
 CAP_USER_MANAGE = "user.manage"
 CAP_AUDIT_VIEW = "audit.view"
+CAP_NOTICE_MANAGE = "community.notice.manage"
+CAP_EVENT_MANAGE = "community.event.manage"
+CAP_ISSUE_MANAGE = "community.issue.manage"
 
 ALL_CAPABILITIES: frozenset[str] = frozenset(
     {
@@ -25,6 +28,9 @@ ALL_CAPABILITIES: frozenset[str] = frozenset(
         CAP_RESIDENT_IMPORT,
         CAP_USER_MANAGE,
         CAP_AUDIT_VIEW,
+        CAP_NOTICE_MANAGE,
+        CAP_EVENT_MANAGE,
+        CAP_ISSUE_MANAGE,
     }
 )
 
@@ -41,7 +47,15 @@ COMMUNITY_ROLE_CAPS: dict[str, frozenset[str]] = {
     CommunityRole.resident: frozenset(),
     CommunityRole.committee_member: frozenset(),
     CommunityRole.community_admin: frozenset(
-        {CAP_COMMUNITY_UPDATE, CAP_UNIT_MANAGE, CAP_MEMBER_MANAGE, CAP_RESIDENT_IMPORT}
+        {
+            CAP_COMMUNITY_UPDATE,
+            CAP_UNIT_MANAGE,
+            CAP_MEMBER_MANAGE,
+            CAP_RESIDENT_IMPORT,
+            CAP_NOTICE_MANAGE,
+            CAP_EVENT_MANAGE,
+            CAP_ISSUE_MANAGE,
+        }
     ),
 }
 
@@ -49,7 +63,14 @@ COMMUNITY_ROLE_CAPS: dict[str, frozenset[str]] = {
 # permissions"). Deliberately excludes CAP_COMMUNITY_UPDATE — renaming/
 # deactivating the community itself stays admin-only.
 ASSIGNABLE_COMMITTEE_CAPS: frozenset[str] = frozenset(
-    {CAP_UNIT_MANAGE, CAP_MEMBER_MANAGE, CAP_RESIDENT_IMPORT}
+    {
+        CAP_UNIT_MANAGE,
+        CAP_MEMBER_MANAGE,
+        CAP_RESIDENT_IMPORT,
+        CAP_NOTICE_MANAGE,
+        CAP_EVENT_MANAGE,
+        CAP_ISSUE_MANAGE,
+    }
 )
 
 

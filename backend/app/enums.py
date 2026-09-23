@@ -42,3 +42,15 @@ class BookingStatus(StrEnum):
     accepted = "accepted"
     completed = "completed"
     cancelled = "cancelled"
+
+
+class NoticePriority(StrEnum):
+    general = "general"
+    critical = "critical"
+
+
+class IssueStatus(StrEnum):
+    submitted = "submitted"
+    in_progress = "in_progress"
+    resolved = "resolved"
+    reopened = "reopened"

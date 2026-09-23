@@ -50,3 +50,15 @@ final myMembershipsProvider = FutureProvider<List<MyMembership>>((ref) async {
     throw AppException.fromDio(e);
   }
 });
+
+/// The community this user is an active member of, used to scope
+/// Notices/Issues/Events on the Resident portal. Residents typically belong
+/// to just one; the first active membership wins if there's more than one.
+final myActiveMembershipProvider = Provider<AsyncValue<MyMembership?>>((ref) {
+  return ref.watch(myMembershipsProvider).whenData((list) {
+    for (final m in list) {
+      if (m.status == 'active') return m;
+    }
+    return null;
+  });
+});

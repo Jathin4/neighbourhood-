@@ -6,7 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/api_client.dart';
 import '../../core/app_exception.dart';
 import '../../shared/communities.dart';
+import '../../shared/community_content.dart';
+import '../../shared/marketplace.dart' show fmtBookingWhen;
 import '../../shared/me.dart';
+import '../../shared/my_memberships.dart';
 import '../../shared/role.dart';
 import '../../shared/ticket_ui.dart';
 import 'data.dart';
@@ -186,32 +189,61 @@ class MyCommunitiesScreen extends ConsumerWidget {
 class AllNoticesScreen extends ConsumerWidget {
   const AllNoticesScreen({super.key});
 
+  Future<void> _markRead(BuildContext context, WidgetRef ref, String communityId, String noticeId) async {
+    try {
+      await ref.read(apiClientProvider).raw.post('/communities/$communityId/notices/$noticeId/read');
+      ref.invalidate(noticesProvider(communityId));
+      if (context.mounted) showSnack(context, 'Marked as read');
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notices = ref.watch(residentProvider.select((d) => d.notices));
-    final ctrl = ref.read(residentProvider.notifier);
-    return _shell('Notices', [
-      for (final n in notices)
-        TicketCard(
-          cat: 'notice',
-          status: n.priority == 'Critical' ? TStatus.danger : TStatus.blue,
-          id: n.date,
-          title: n.title,
-          meta: [n.body],
-          trailing: Pill(n.priority, kind: n.priority == 'Critical' ? PillKind.brick : PillKind.blue),
-          actions: n.read
-              ? null
-              : Row(children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => ctrl.markNoticeRead(n.id),
-                      style: OutlinedButton.styleFrom(foregroundColor: PC.ink, side: const BorderSide(color: PC.line)),
-                      child: const Text('Mark as read', style: TextStyle(fontSize: 11.5)),
-                    ),
-                  ),
-                ]),
-        ),
-    ]);
+    final membership = ref.watch(myActiveMembershipProvider);
+    return membership.when(
+      loading: () => _shell('Notices', const [Center(child: CircularProgressIndicator())]),
+      error: (e, _) => _shell('Notices', [Text('$e')]),
+      data: (m) {
+        if (m == null) {
+          return _shell('Notices', const [_Empty("You're not part of a community yet.")]);
+        }
+        final notices = ref.watch(noticesProvider(m.communityId));
+        return _shell('Notices', [
+          notices.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (list) => list.isEmpty
+                ? const _Empty('No notices yet.')
+                : Column(children: [
+                    for (final n in list)
+                      TicketCard(
+                        cat: 'notice',
+                        status: n.priority == 'critical' ? TStatus.danger : TStatus.blue,
+                        id: fmtBookingWhen(n.createdAt),
+                        title: n.title,
+                        meta: [n.body],
+                        trailing: Pill(n.priority == 'critical' ? 'Critical' : 'General',
+                            kind: n.priority == 'critical' ? PillKind.brick : PillKind.blue),
+                        actions: n.read
+                            ? null
+                            : Row(children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => _markRead(context, ref, m.communityId, n.id),
+                                    style: OutlinedButton.styleFrom(
+                                        foregroundColor: PC.ink, side: const BorderSide(color: PC.line)),
+                                    child: const Text('Mark as read', style: TextStyle(fontSize: 11.5)),
+                                  ),
+                                ),
+                              ]),
+                      ),
+                  ]),
+          ),
+        ]);
+      },
+    );
   }
 }
 
@@ -220,30 +252,58 @@ class AllNoticesScreen extends ConsumerWidget {
 class AllEventsScreen extends ConsumerWidget {
   const AllEventsScreen({super.key});
 
+  Future<void> _toggleRsvp(BuildContext context, WidgetRef ref, String communityId, String eventId) async {
+    try {
+      await ref.read(apiClientProvider).raw.post('/communities/$communityId/events/$eventId/rsvp');
+      ref.invalidate(eventsProvider(communityId));
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(residentProvider.select((d) => d.events));
-    final ctrl = ref.read(residentProvider.notifier);
-    return _shell('Events & polls', [
-      for (final e in events)
-        TicketCard(
-          cat: 'event',
-          status: TStatus.blue,
-          id: e.when,
-          title: e.title,
-          meta: [e.location],
-          trailing: e.rsvped ? const Pill('Going', kind: PillKind.green) : null,
-          actions: Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => ctrl.toggleRsvp(e.id),
-                style: OutlinedButton.styleFrom(foregroundColor: PC.ink, side: const BorderSide(color: PC.line)),
-                child: Text(e.rsvped ? 'Cancel RSVP' : 'RSVP', style: const TextStyle(fontSize: 11.5)),
-              ),
-            ),
-          ]),
-        ),
-    ]);
+    final membership = ref.watch(myActiveMembershipProvider);
+    return membership.when(
+      loading: () => _shell('Events & polls', const [Center(child: CircularProgressIndicator())]),
+      error: (e, _) => _shell('Events & polls', [Text('$e')]),
+      data: (m) {
+        if (m == null) {
+          return _shell('Events & polls', const [_Empty("You're not part of a community yet.")]);
+        }
+        final events = ref.watch(eventsProvider(m.communityId));
+        return _shell('Events & polls', [
+          events.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text('$e'),
+            data: (list) => list.isEmpty
+                ? const _Empty('No upcoming events.')
+                : Column(children: [
+                    for (final e in list)
+                      TicketCard(
+                        cat: 'event',
+                        status: TStatus.blue,
+                        id: fmtBookingWhen(e.startsAt),
+                        title: e.title,
+                        meta: [e.location],
+                        trailing: e.rsvped ? const Pill('Going', kind: PillKind.green) : null,
+                        actions: Row(children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => _toggleRsvp(context, ref, m.communityId, e.id),
+                              style: OutlinedButton.styleFrom(
+                                  foregroundColor: PC.ink, side: const BorderSide(color: PC.line)),
+                              child: Text(e.rsvped ? 'Cancel RSVP' : 'RSVP',
+                                  style: const TextStyle(fontSize: 11.5)),
+                            ),
+                          ),
+                        ]),
+                      ),
+                  ]),
+          ),
+        ]);
+      },
+    );
   }
 }
 

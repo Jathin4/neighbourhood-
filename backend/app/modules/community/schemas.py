@@ -91,3 +91,33 @@ class ImportSummary(BaseModel):
     existing: int
     errors: int
     results: list[ImportRowResult]
+
+
+class NoticeIn(BaseModel):
+    title: str = Field(min_length=2, max_length=200)
+    body: str = Field(min_length=1, max_length=4000)
+    priority: str = Field(default="general", pattern="^(general|critical)$")
+
+
+class NoticeOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    body: str
+    priority: str
+    created_at: datetime
+    read: bool
+
+
+class EventIn(BaseModel):
+    title: str = Field(min_length=2, max_length=200)
+    starts_at: datetime
+    location: str = Field(min_length=1, max_length=200)
+
+
+class EventOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    starts_at: datetime
+    location: str
+    rsvp_count: int
+    rsvped: bool

@@ -16,10 +16,14 @@ from app.modules.community.schemas import (
     CommunityIn,
     CommunityOut,
     CommunityUpdateIn,
+    EventIn,
+    EventOut,
     ImportSummary,
     JoinRequestIn,
     MembershipOut,
     MembershipUpdateIn,
+    NoticeIn,
+    NoticeOut,
     UnitBulkIn,
     UnitOut,
 )
@@ -35,6 +39,19 @@ async def require_member_or_platform(
     if user.platform_role in (PlatformRole.platform_ops, PlatformRole.super_admin):
         return user
     m = await get_membership(db, user.id, id)
+    if m is not None and m.status == MembershipStatus.active:
+        return user
+    raise forbidden("Not a member of this community")
+
+
+async def require_member_or_platform_cid(
+    community_id: uuid.UUID,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    if user.platform_role in (PlatformRole.platform_ops, PlatformRole.super_admin):
+        return user
+    m = await get_membership(db, user.id, community_id)
     if m is not None and m.status == MembershipStatus.active:
         return user
     raise forbidden("Not a member of this community")
@@ -184,3 +201,64 @@ async def import_residents(
         meta={"created": summary.created, "existing": summary.existing, "errors": summary.errors},
     )
     return summary
+
+
+@router.post("/{community_id}/notices", response_model=NoticeOut, status_code=201)
+async def create_notice(
+    community_id: uuid.UUID,
+    body: NoticeIn,
+    user: User = Depends(require(rbac.CAP_NOTICE_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    notice = await service.create_notice(db, community_id, user.id, body.model_dump())
+    return {**body.model_dump(), "id": notice.id, "created_at": notice.created_at, "read": True}
+
+
+@router.get("/{community_id}/notices", response_model=list[NoticeOut])
+async def list_notices(
+    community_id: uuid.UUID,
+    user: User = Depends(require_member_or_platform_cid),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_notices(db, community_id, user.id)
+
+
+@router.post("/{community_id}/notices/{notice_id}/read", status_code=204)
+async def mark_notice_read(
+    community_id: uuid.UUID,
+    notice_id: uuid.UUID,
+    user: User = Depends(require_member_or_platform_cid),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.mark_notice_read(db, notice_id, user.id)
+
+
+@router.post("/{community_id}/events", response_model=EventOut, status_code=201)
+async def create_event(
+    community_id: uuid.UUID,
+    body: EventIn,
+    user: User = Depends(require(rbac.CAP_EVENT_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    event = await service.create_event(db, community_id, user.id, body.model_dump())
+    return {**body.model_dump(), "id": event.id, "rsvp_count": 0, "rsvped": False}
+
+
+@router.get("/{community_id}/events", response_model=list[EventOut])
+async def list_events(
+    community_id: uuid.UUID,
+    user: User = Depends(require_member_or_platform_cid),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_events(db, community_id, user.id)
+
+
+@router.post("/{community_id}/events/{event_id}/rsvp")
+async def toggle_rsvp(
+    community_id: uuid.UUID,
+    event_id: uuid.UUID,
+    user: User = Depends(require_member_or_platform_cid),
+    db: AsyncSession = Depends(get_db),
+):
+    rsvped = await service.toggle_rsvp(db, event_id, user.id)
+    return {"rsvped": rsvped}

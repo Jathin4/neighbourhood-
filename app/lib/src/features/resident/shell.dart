@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/app_exception.dart';
+import '../../shared/community_content.dart';
 import '../../shared/marketplace.dart';
 import '../../shared/me.dart';
+import '../../shared/my_memberships.dart';
 import '../../shared/ticket_ui.dart';
 import '../auth/auth_controller.dart';
 import 'data.dart';
@@ -35,9 +37,10 @@ class _ResidentShellState extends ConsumerState<ResidentShell> {
 
   @override
   Widget build(BuildContext context) {
-    final openIssues = ref.watch(
-      residentProvider.select((d) => d.issues.where((i) => i.status != TStatus.success).length),
-    );
+    final openIssues = ref.watch(myIssuesProvider).maybeWhen(
+          data: (list) => list.where((i) => i.status != 'resolved').length,
+          orElse: () => 0,
+        );
 
     return Scaffold(
       backgroundColor: PC.bg,
@@ -141,72 +144,128 @@ class _HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final data = ref.watch(residentProvider);
-    final ctrl = ref.read(residentProvider.notifier);
-    final unreadNotices = data.notices.where((n) => !n.read).length;
-    final openIssues = data.issues.where((i) => i.status != TStatus.success).length;
+    final membership = ref.watch(myActiveMembershipProvider);
     final activeBookings = ref.watch(myBookingsProvider).maybeWhen(
           data: (list) =>
               list.where((b) => b.status == 'requested' || b.status == 'accepted').length,
           orElse: () => 0,
         );
 
-    return ListView(
-      padding: _bodyPad,
-      children: [
-        StatRow([
-          StatChip('$unreadNotices', 'Unread notices', highlight: true),
-          StatChip('$openIssues', 'Open issues'),
-          StatChip('${data.events.length}', 'Upcoming events'),
-          StatChip('$activeBookings', 'Active bookings'),
-        ]),
-        SectionTitle(
-          'Notices',
-          trailing: TextButton(
-            onPressed: () {
-              ctrl.resetDemo();
-              showSnack(context, 'Demo data restored');
-            },
-            child: const Text('Reset', style: TextStyle(fontSize: 11.5)),
-          ),
-        ),
-        for (final n in data.notices.take(2)) _NoticeTile(n),
-        const SectionTitle('Open issues'),
-        if (openIssues == 0)
-          const _Empty('No open issues — nice and quiet.')
-        else
-          for (final i in data.issues.where((i) => i.status != TStatus.success).take(2))
-            _IssueTile(i),
-        const SectionTitle('Upcoming events'),
-        for (final e in data.events.take(2)) _EventTile(e),
-      ],
+    return membership.when(
+      loading: () => const _Loading(),
+      error: (e, _) => Center(child: Text('$e')),
+      data: (m) {
+        if (m == null) {
+          return ListView(
+            padding: _bodyPad,
+            children: [
+              StatRow([
+                const StatChip('0', 'Unread notices', highlight: true),
+                const StatChip('0', 'Open issues'),
+                const StatChip('0', 'Upcoming events'),
+                StatChip('$activeBookings', 'Active bookings'),
+              ]),
+              const SizedBox(height: 16),
+              const _Empty(
+                  "You're not part of a community yet — a Community Admin needs to approve your membership."),
+            ],
+          );
+        }
+
+        final notices = ref.watch(noticesProvider(m.communityId));
+        final events = ref.watch(eventsProvider(m.communityId));
+        final issues = ref.watch(myIssuesProvider);
+        final unreadNotices =
+            notices.maybeWhen(data: (l) => l.where((n) => !n.read).length, orElse: () => 0);
+        final openIssueCount = issues.maybeWhen(
+            data: (l) => l.where((i) => i.status != 'resolved').length, orElse: () => 0);
+        final eventCount = events.maybeWhen(data: (l) => l.length, orElse: () => 0);
+
+        return ListView(
+          padding: _bodyPad,
+          children: [
+            StatRow([
+              StatChip('$unreadNotices', 'Unread notices', highlight: true),
+              StatChip('$openIssueCount', 'Open issues'),
+              StatChip('$eventCount', 'Upcoming events'),
+              StatChip('$activeBookings', 'Active bookings'),
+            ]),
+            const SectionTitle('Notices'),
+            notices.when(
+              loading: () => const _Loading(),
+              error: (e, _) => Text('$e'),
+              data: (list) => list.isEmpty
+                  ? const _Empty('No notices yet.')
+                  : Column(children: [
+                      for (final n in list.take(2)) _NoticeTile(communityId: m.communityId, notice: n),
+                    ]),
+            ),
+            const SectionTitle('Open issues'),
+            issues.when(
+              loading: () => const _Loading(),
+              error: (e, _) => Text('$e'),
+              data: (list) {
+                final open = list.where((i) => i.status != 'resolved').take(2).toList();
+                return open.isEmpty
+                    ? const _Empty('No open issues — nice and quiet.')
+                    : Column(children: [for (final i in open) _IssueTile(i)]);
+              },
+            ),
+            const SectionTitle('Upcoming events'),
+            events.when(
+              loading: () => const _Loading(),
+              error: (e, _) => Text('$e'),
+              data: (list) => list.isEmpty
+                  ? const _Empty('No upcoming events.')
+                  : Column(children: [
+                      for (final e in list.take(2)) _EventTile(communityId: m.communityId, event: e),
+                    ]),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
+class _Loading extends StatelessWidget {
+  const _Loading();
+  @override
+  Widget build(BuildContext context) =>
+      const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
+}
+
 class _NoticeTile extends ConsumerWidget {
-  const _NoticeTile(this.notice);
-  final Notice notice;
+  const _NoticeTile({required this.communityId, required this.notice});
+  final String communityId;
+  final CommunityNotice notice;
+
+  Future<void> _markRead(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .raw
+          .post('/communities/$communityId/notices/${notice.id}/read');
+      ref.invalidate(noticesProvider(communityId));
+      if (context.mounted) showSnack(context, 'Marked as read');
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ctrl = ref.read(residentProvider.notifier);
+    final critical = notice.priority == 'critical';
     return TicketCard(
       cat: 'notice',
-      status: notice.priority == 'Critical' ? TStatus.danger : TStatus.blue,
-      id: notice.date,
+      status: critical ? TStatus.danger : TStatus.blue,
+      id: fmtBookingWhen(notice.createdAt),
       title: notice.title,
       meta: [notice.body],
-      trailing: Pill(notice.priority,
-          kind: notice.priority == 'Critical' ? PillKind.brick : PillKind.blue),
+      trailing: Pill(critical ? 'Critical' : 'General', kind: critical ? PillKind.brick : PillKind.blue),
       actions: notice.read
           ? null
-          : Row(children: [
-              _outline('Mark as read', () {
-                ctrl.markNoticeRead(notice.id);
-                showSnack(context, 'Marked as read');
-              }),
-            ]),
+          : Row(children: [_outline('Mark as read', () => _markRead(context, ref))]),
     );
   }
 }
@@ -359,30 +418,57 @@ class _BookingTile extends ConsumerWidget {
 class _IssuesTab extends ConsumerWidget {
   const _IssuesTab();
 
+  Future<void> _raise(
+      BuildContext context, WidgetRef ref, String communityId, String category, String title) async {
+    try {
+      await ref.read(apiClientProvider).raw.post('/issues', data: {
+        'community_id': communityId,
+        'category': category,
+        'title': title.isEmpty ? 'Untitled issue' : title,
+      });
+      ref.invalidate(myIssuesProvider);
+      if (context.mounted) showSnack(context, 'Issue submitted — a ticket has been created');
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final issues = ref.watch(residentProvider.select((d) => d.issues));
-    final ctrl = ref.read(residentProvider.notifier);
+    final membership = ref.watch(myActiveMembershipProvider);
+    final issues = ref.watch(myIssuesProvider);
 
     return ListView(
       padding: _bodyPad,
       children: [
-        FilledButton(
-          onPressed: () => _showRaiseIssueSheet(context, ctrl),
-          style: FilledButton.styleFrom(backgroundColor: PC.navy, minimumSize: const Size.fromHeight(44)),
-          child: const Text('Raise an issue'),
+        membership.maybeWhen(
+          data: (m) => m == null
+              ? const SizedBox.shrink()
+              : FilledButton(
+                  onPressed: () => _showRaiseIssueSheet(context, ref, m.communityId),
+                  style:
+                      FilledButton.styleFrom(backgroundColor: PC.navy, minimumSize: const Size.fromHeight(44)),
+                  child: const Text('Raise an issue'),
+                ),
+          orElse: () => const SizedBox.shrink(),
         ),
         const SizedBox(height: 16),
-        for (final i in issues) _IssueTile(i, showReopen: true),
+        issues.when(
+          loading: () => const _Loading(),
+          error: (e, _) => Text('$e'),
+          data: (list) => list.isEmpty
+              ? const _Empty('No issues raised yet.')
+              : Column(children: [for (final i in list) _IssueTile(i, showReopen: true)]),
+        ),
       ],
     );
   }
 
-  void _showRaiseIssueSheet(BuildContext context, ResidentController ctrl) {
+  void _showRaiseIssueSheet(BuildContext outerContext, WidgetRef ref, String communityId) {
     final title = TextEditingController();
     String category = 'Plumbing';
     showModalBottomSheet<void>(
-      context: context,
+      context: outerContext,
       isScrollControlled: true,
       builder: (context) => Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 16),
@@ -409,9 +495,8 @@ class _IssuesTab extends ConsumerWidget {
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () {
-                  ctrl.raiseIssue(category, title.text.trim());
                   Navigator.pop(context);
-                  showSnack(context, 'Issue submitted — a ticket has been created');
+                  _raise(outerContext, ref, communityId, category, title.text.trim());
                 },
                 style: FilledButton.styleFrom(backgroundColor: PC.navy, minimumSize: const Size.fromHeight(44)),
                 child: const Text('Submit'),
@@ -426,56 +511,70 @@ class _IssuesTab extends ConsumerWidget {
 
 class _IssueTile extends ConsumerWidget {
   const _IssueTile(this.issue, {this.showReopen = false});
-  final IssueTicket issue;
+  final CommunityIssue issue;
   final bool showReopen;
+
+  Future<void> _reopen(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(apiClientProvider).raw.patch('/issues/${issue.id}', data: {'action': 'reopen'});
+      ref.invalidate(myIssuesProvider);
+      if (context.mounted) showSnack(context, 'Issue reopened');
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ctrl = ref.read(residentProvider.notifier);
-    final pillKind = switch (issue.status) {
+    final (status, statusLabel) = issueStatusInfo(issue.status);
+    final pillKind = switch (status) {
       TStatus.success => PillKind.green,
       TStatus.amber => PillKind.amber,
       TStatus.danger => PillKind.brick,
       TStatus.blue => PillKind.blue,
     };
     return TicketCard(
-      cat: issue.cat,
-      status: issue.status,
-      id: issue.id,
+      cat: 'issue',
+      status: status,
+      id: issue.category,
       title: issue.title,
-      meta: ['Raised ${issue.date}'],
-      trailing: Pill(issue.statusLabel, kind: pillKind),
-      actions: showReopen && issue.status == TStatus.success
-          ? Row(children: [
-              _outline('Reopen', () {
-                ctrl.reopenIssue(issue.id);
-                showSnack(context, 'Issue reopened');
-              }),
-            ])
+      meta: ['Raised ${fmtBookingWhen(issue.createdAt)}'],
+      trailing: Pill(statusLabel, kind: pillKind),
+      actions: showReopen && issue.status == 'resolved'
+          ? Row(children: [_outline('Reopen', () => _reopen(context, ref))])
           : null,
     );
   }
 }
 
 class _EventTile extends ConsumerWidget {
-  const _EventTile(this.event);
-  final EventItem event;
+  const _EventTile({required this.communityId, required this.event});
+  final String communityId;
+  final CommunityEvent event;
+
+  Future<void> _toggleRsvp(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(apiClientProvider).raw.post('/communities/$communityId/events/${event.id}/rsvp');
+      ref.invalidate(eventsProvider(communityId));
+      if (context.mounted) {
+        showSnack(context, event.rsvped ? 'RSVP cancelled' : 'RSVP confirmed');
+      }
+    } on DioException catch (e) {
+      if (context.mounted) showSnack(context, AppException.fromDio(e).message);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ctrl = ref.read(residentProvider.notifier);
     return TicketCard(
       cat: 'event',
       status: TStatus.blue,
-      id: event.when,
+      id: fmtBookingWhen(event.startsAt),
       title: event.title,
       meta: [event.location],
       trailing: event.rsvped ? const Pill('Going', kind: PillKind.green) : null,
       actions: Row(children: [
-        _outline(event.rsvped ? 'Cancel RSVP' : 'RSVP', () {
-          ctrl.toggleRsvp(event.id);
-          showSnack(context, event.rsvped ? 'RSVP cancelled' : 'RSVP confirmed');
-        }),
+        _outline(event.rsvped ? 'Cancel RSVP' : 'RSVP', () => _toggleRsvp(context, ref)),
       ]),
     );
   }
