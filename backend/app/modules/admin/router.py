@@ -8,7 +8,13 @@ from app.db import get_db
 from app.deps import require
 from app.models.user import User
 from app.modules.admin import service
-from app.modules.admin.schemas import AuditLogOut, UserAdminOut, UserStatusUpdateIn
+from app.modules.admin.schemas import (
+    AuditLogOut,
+    DashboardStatsOut,
+    GrowthSeriesOut,
+    UserAdminOut,
+    UserStatusUpdateIn,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -66,3 +72,20 @@ async def list_audit_logs(
         )
         for log, mobile in rows
     ]
+
+
+@router.get("/dashboard-stats", response_model=DashboardStatsOut)
+async def dashboard_stats(
+    _: User = Depends(require(rbac.CAP_USER_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.get_dashboard_stats(db)
+
+
+@router.get("/growth-series", response_model=GrowthSeriesOut)
+async def growth_series(
+    days: int = Query(default=10, ge=2, le=90),
+    _: User = Depends(require(rbac.CAP_USER_MANAGE)),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.get_growth_series(db, days=days)

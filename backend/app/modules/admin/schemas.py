@@ -32,3 +32,19 @@ class AuditLogOut(BaseModel):
     correlation_id: str | None
     meta: dict
     created_at: datetime
+
+
+class DashboardStatsOut(BaseModel):
+    total_communities: int
+    total_residents: int
+    community_admins: int
+    committee_members: int
+    service_providers: int
+    total_bookings: int
+    pending_membership_approvals: int
+
+
+class GrowthSeriesOut(BaseModel):
+    labels: list[str]
+    new_users: list[int]
+    new_bookings: list[int]

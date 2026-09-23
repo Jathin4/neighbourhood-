@@ -59,77 +59,9 @@ const navItems = [
   NavItem('Settings', Icons.build_outlined),
 ];
 
-class StatCardData {
-  const StatCardData(this.label, this.value, this.delta, this.up, this.icon, this.bg, this.fg);
-  final String label;
-  final String value;
-  final String delta;
-  final bool up;
-  final IconData icon;
-  final Color bg;
-  final Color fg;
-}
-
-const mockStats = [
-  StatCardData('Total Residents', '12,480', '+12%', true, Icons.groups_outlined, AC.blue50,
-      AC.blue),
-  StatCardData('Community Admins', '120', '+8%', true, Icons.shield_outlined, AC.purple50,
-      AC.purple),
-  StatCardData('Committee Members', '245', '+6%', true, Icons.diversity_3_outlined, AC.amber50,
-      AC.amber),
-  StatCardData('Service Providers', '420', '+14%', true, Icons.handyman_outlined, AC.teal50,
-      AC.teal),
-  StatCardData('Total Bookings', '3,650', '+18%', true, Icons.calendar_month_outlined, AC.red50,
-      AC.red),
-  StatCardData('Pending Provider Verifications', '15', '-40%', false, Icons.schedule_outlined,
-      AC.amber50, AC.amber),
-  StatCardData('Platform Revenue', '₹8,42,500', '+22%', true, Icons.currency_rupee, AC.blue50,
-      AC.blue),
-];
-
-class ActivityRow {
-  const ActivityRow(this.time, this.action, this.icon, this.color, this.bg, this.user, this.detail);
-  final String time, action, user, detail;
-  final IconData icon;
-  final Color color, bg;
-}
-
-// Names below intentionally reuse the same entities as the Provider/Resident
-// mock data (features/provider/data.dart, features/resident/data.dart) so
-// the demo reads as one connected world across roles.
-const mockActivity = [
-  ActivityRow('Today, 10:24 AM', 'Provider Verified', Icons.check, AC.green, AC.green50,
-      'Suresh Plumbing Works', 'Provider ID: PRV-1024'),
-  ActivityRow('Today, 09:18 AM', 'Community Created', Icons.apartment, AC.blue, AC.blue50,
-      'Green Meadows Residency', 'Community ID: COM-085'),
-  ActivityRow('Today, 08:42 AM', 'New Booking', Icons.calendar_month, AC.purple, AC.purple50,
-      'Rohit Verma', 'Booking ID: BK-4587'),
-  ActivityRow('Today, 07:15 AM', 'Refund Issued', Icons.currency_rupee, AC.amber, AC.amber50,
-      'Priya Menon', 'Payment ID: PAY-7782'),
-  ActivityRow('Yesterday, 06:32 PM', 'User Suspended', Icons.block, AC.red, AC.red50,
-      'Karthik Nair', 'Reason: Policy violation'),
-];
-
-class ApprovalItem {
-  const ApprovalItem(this.title, this.sub, this.count, this.icon, this.bg, this.fg);
-  final String title, sub;
-  final int count;
-  final IconData icon;
-  final Color bg, fg;
-}
-
-const mockApprovals = [
-  ApprovalItem('Provider Verifications', 'Require review', 15, Icons.handyman_outlined,
-      AC.amber50, AC.amber),
-  ApprovalItem('Community Requests', 'Require review', 23, Icons.apartment_outlined, AC.blue50,
-      AC.blue),
-  ApprovalItem('Resident Approvals', 'Require review', 42, Icons.groups_outlined, AC.green50,
-      AC.green),
-  ApprovalItem('Content Moderation', 'Flagged items', 8, Icons.shield_outlined, AC.purple50,
-      AC.purple),
-  ApprovalItem('Dispute Resolutions', 'Require action', 4, Icons.flag_outlined, AC.red50, AC.red),
-];
-
+// Illustrative only — no infra-monitoring backend exists to check these
+// against, unlike the dashboard stats/activity/growth data (see
+// dashboard_data.dart), which are real.
 const healthItems = [
   ('API Services', Icons.dns_outlined),
   ('Database', Icons.storage_outlined),
@@ -154,12 +86,3 @@ const quickActions = [
   QuickActionData('Manage Roles & Permissions', Icons.lock_outline, AC.amber50, AC.amber),
   QuickActionData('View Audit Logs', Icons.description_outlined, AC.red50, AC.red),
 ];
-
-/// Platform Growth series (mock — no analytics module yet, requirements §18).
-const chartWeekLabels = ['Apr 27', 'May 4', 'May 11', 'May 18', 'May 25'];
-const Map<String, List<double>> chartSeries = {
-  'Users': [2200.0, 2900, 3600, 4400, 5300, 6600, 7100, 7700, 8300, 9100],
-  'Bookings': [900.0, 1200, 1500, 1900, 2300, 2700, 3000, 3300, 3700, 4100],
-  'Revenue': [300.0, 450, 600, 800, 1000, 1250, 1500, 1750, 2050, 2350],
-};
-const chartSeriesColors = {'Users': AC.blue, 'Bookings': AC.green, 'Revenue': AC.amber};

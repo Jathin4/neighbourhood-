@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/communities.dart';
 import 'create_community_screen.dart';
+import 'dashboard_data.dart';
 import 'growth_chart.dart';
 import 'panel_data.dart';
 import 'quick_action_dialog.dart';
@@ -13,6 +14,7 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final communities = ref.watch(communitiesProvider);
+    final stats = ref.watch(dashboardStatsProvider);
     final wide = MediaQuery.of(context).size.width > 900;
 
     return ListView(
@@ -58,17 +60,61 @@ class DashboardPage extends ConsumerWidget {
                   bg: AC.green50,
                   fg: AC.green,
                 ),
-                for (final s in mockStats)
-                  _StatCard(
-                    width: cardWidth,
-                    label: s.label,
-                    value: s.value,
-                    delta: s.delta,
-                    up: s.up,
-                    icon: s.icon,
-                    bg: s.bg,
-                    fg: s.fg,
-                  ),
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Total Residents',
+                  value: stats.maybeWhen(data: (s) => '${s.totalResidents}', orElse: () => '—'),
+                  caption: 'Active resident memberships',
+                  icon: Icons.groups_outlined,
+                  bg: AC.blue50,
+                  fg: AC.blue,
+                ),
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Community Admins',
+                  value: stats.maybeWhen(data: (s) => '${s.communityAdmins}', orElse: () => '—'),
+                  caption: 'Active across all communities',
+                  icon: Icons.shield_outlined,
+                  bg: AC.purple50,
+                  fg: AC.purple,
+                ),
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Committee Members',
+                  value: stats.maybeWhen(data: (s) => '${s.committeeMembers}', orElse: () => '—'),
+                  caption: 'Active across all communities',
+                  icon: Icons.diversity_3_outlined,
+                  bg: AC.amber50,
+                  fg: AC.amber,
+                ),
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Service Providers',
+                  value: stats.maybeWhen(data: (s) => '${s.serviceProviders}', orElse: () => '—'),
+                  caption: 'Registered provider profiles',
+                  icon: Icons.handyman_outlined,
+                  bg: AC.teal50,
+                  fg: AC.teal,
+                ),
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Total Bookings',
+                  value: stats.maybeWhen(data: (s) => '${s.totalBookings}', orElse: () => '—'),
+                  caption: 'All bookings, any status',
+                  icon: Icons.calendar_month_outlined,
+                  bg: AC.red50,
+                  fg: AC.red,
+                ),
+                _StatCard(
+                  width: cardWidth,
+                  label: 'Pending Membership Approvals',
+                  value: stats.maybeWhen(
+                      data: (s) => '${s.pendingMembershipApprovals}', orElse: () => '—'),
+                  caption: 'Across every community',
+                  icon: Icons.pending_actions_outlined,
+                  bg: AC.amber50,
+                  fg: AC.amber,
+                ),
               ],
             );
           },
@@ -147,10 +193,9 @@ class _DateRangeChip extends StatelessWidget {
 }
 
 class _Card extends StatelessWidget {
-  const _Card({required this.child, this.title, this.trailing});
+  const _Card({required this.child, this.title});
   final Widget child;
   final String? title;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -168,16 +213,7 @@ class _Card extends StatelessWidget {
           if (title != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(title!,
-                        style:
-                            const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
-                  ),
-                  if (trailing != null) trailing!,
-                ],
-              ),
+              child: Text(title!, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700)),
             ),
           child,
         ],
@@ -194,15 +230,12 @@ class _StatCard extends StatelessWidget {
     required this.icon,
     required this.bg,
     required this.fg,
-    this.delta,
-    this.up = true,
     this.caption,
   });
 
   final double width;
   final String label, value;
-  final String? delta, caption;
-  final bool up;
+  final String? caption;
   final IconData icon;
   final Color bg, fg;
 
@@ -231,28 +264,7 @@ class _StatCard extends StatelessWidget {
           Text(value,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AC.ink900)),
           const SizedBox(height: 6),
-          if (delta != null)
-            Row(
-              children: [
-                Icon(up ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: 13, color: up ? AC.green : AC.red),
-                const SizedBox(width: 3),
-                Text(delta!,
-                    style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: up ? AC.green : AC.red)),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    'from last month',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5, color: AC.ink400),
-                  ),
-                ),
-              ],
-            )
-          else if (caption != null)
+          if (caption != null)
             Text(caption!, style: const TextStyle(fontSize: 12, color: AC.ink400)),
         ],
       ),
@@ -260,11 +272,28 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _PlatformGrowthCard extends StatelessWidget {
+class _PlatformGrowthCard extends ConsumerWidget {
   const _PlatformGrowthCard();
+
   @override
-  Widget build(BuildContext context) =>
-      const _Card(title: 'Platform Growth', child: GrowthChart());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final growth = ref.watch(growthSeriesProvider);
+    return _Card(
+      title: 'Platform Growth (last 10 days)',
+      child: growth.when(
+        loading: () => const SizedBox(height: 240, child: Center(child: CircularProgressIndicator())),
+        error: (e, _) => SizedBox(height: 240, child: Center(child: Text('$e'))),
+        data: (g) => GrowthChart(
+          labels: g.labels,
+          series: {
+            'New Users': g.newUsers.map((v) => v.toDouble()).toList(),
+            'New Bookings': g.newBookings.map((v) => v.toDouble()).toList(),
+          },
+          colors: const {'New Users': AC.blue, 'New Bookings': AC.green},
+        ),
+      ),
+    );
+  }
 }
 
 class _QuickActionsCard extends ConsumerWidget {
@@ -317,104 +346,111 @@ class _QuickActionsCard extends ConsumerWidget {
   }
 }
 
-class _ApprovalsCard extends StatelessWidget {
+class _ApprovalsCard extends ConsumerWidget {
   const _ApprovalsCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(dashboardStatsProvider);
     return _Card(
       title: 'Pending Approvals',
-      trailing: const Text('View All',
-          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AC.blue)),
-      child: Column(
-        children: [
-          for (final a in mockApprovals)
-            InkWell(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Opening ${a.title.toLowerCase()} queue…')),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: a == mockApprovals.last
-                    ? null
-                    : const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: AC.line))),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration:
-                          BoxDecoration(color: a.bg, borderRadius: BorderRadius.circular(10)),
-                      child: Icon(a.icon, size: 17, color: a.fg),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(a.title,
-                              style:
-                                  const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-                          Text(a.sub, style: const TextStyle(fontSize: 12, color: AC.ink600)),
-                        ],
-                      ),
-                    ),
-                    Text('${a.count}',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                  ],
-                ),
+      child: stats.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Text('$e'),
+        data: (s) => Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(color: AC.green50, borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.groups_outlined, size: 17, color: AC.green),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Membership Approvals',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                  Text('Pending across every community',
+                      style: TextStyle(fontSize: 12, color: AC.ink600)),
+                ],
               ),
             ),
-        ],
+            Text('${s.pendingMembershipApprovals}',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _ActivityCard extends StatelessWidget {
+IconData _activityIcon(String action) => switch (action) {
+      'community.create' => Icons.apartment,
+      'community.update' => Icons.edit_outlined,
+      'community.member.update' => Icons.person_outline,
+      'community.resident.import' => Icons.upload_file,
+      'user.status_update' => Icons.block,
+      _ => Icons.bolt_outlined,
+    };
+
+class _ActivityCard extends ConsumerWidget {
   const _ActivityCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activity = ref.watch(recentActivityProvider);
     return _Card(
       title: 'Recent Activity',
-      trailing: const Text('View All',
-          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AC.blue)),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowHeight: 34,
-          dataRowMinHeight: 46,
-          dataRowMaxHeight: 46,
-          columnSpacing: 24,
-          columns: const [
-            DataColumn(label: Text('TIME', style: TextStyle(fontSize: 11, color: AC.ink400))),
-            DataColumn(label: Text('ACTION', style: TextStyle(fontSize: 11, color: AC.ink400))),
-            DataColumn(label: Text('USER', style: TextStyle(fontSize: 11, color: AC.ink400))),
-            DataColumn(label: Text('DETAILS', style: TextStyle(fontSize: 11, color: AC.ink400))),
-          ],
-          rows: [
-            for (final a in mockActivity)
-              DataRow(cells: [
-                DataCell(Text(a.time, style: const TextStyle(fontSize: 13, color: AC.ink600))),
-                DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration:
-                        BoxDecoration(color: a.bg, borderRadius: BorderRadius.circular(6)),
-                    child: Icon(a.icon, size: 12, color: a.color),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(a.action,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                ])),
-                DataCell(Text(a.user, style: const TextStyle(fontSize: 13, color: AC.ink600))),
-                DataCell(Text(a.detail, style: const TextStyle(fontSize: 13, color: AC.ink600))),
-              ]),
-          ],
-        ),
+      child: activity.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Text('$e'),
+        data: (list) => list.isEmpty
+            ? const Text('No activity yet.', style: TextStyle(color: AC.ink600))
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowHeight: 34,
+                  dataRowMinHeight: 46,
+                  dataRowMaxHeight: 46,
+                  columnSpacing: 24,
+                  columns: const [
+                    DataColumn(label: Text('TIME', style: TextStyle(fontSize: 11, color: AC.ink400))),
+                    DataColumn(
+                        label: Text('ACTION', style: TextStyle(fontSize: 11, color: AC.ink400))),
+                    DataColumn(label: Text('USER', style: TextStyle(fontSize: 11, color: AC.ink400))),
+                    DataColumn(
+                        label: Text('DETAILS', style: TextStyle(fontSize: 11, color: AC.ink400))),
+                  ],
+                  rows: [
+                    for (final a in list)
+                      DataRow(cells: [
+                        DataCell(Text(
+                            '${a.createdAt.hour.toString().padLeft(2, '0')}:'
+                            '${a.createdAt.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontSize: 13, color: AC.ink600))),
+                        DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration:
+                                BoxDecoration(color: AC.blue50, borderRadius: BorderRadius.circular(6)),
+                            child: Icon(_activityIcon(a.action), size: 12, color: AC.blue),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(a.action,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ])),
+                        DataCell(Text(a.actorMobile ?? '—',
+                            style: const TextStyle(fontSize: 13, color: AC.ink600))),
+                        DataCell(Text(
+                            a.entityId != null ? '${a.entity} · ${a.entityId!.substring(0, 8)}' : a.entity,
+                            style: const TextStyle(fontSize: 13, color: AC.ink600))),
+                      ]),
+                  ],
+                ),
+              ),
       ),
     );
   }

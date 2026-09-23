@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'panel_data.dart';
 
-/// "Platform Growth" line chart — mock data, tap a legend dot to toggle its
-/// series. ponytail: no hover tooltips (canvas hit-testing per point isn't
-/// worth it here); the legend toggle is the one interactive bit worth having.
+/// "Platform Growth" line chart — real daily counts (see dashboard_data.dart's
+/// growthSeriesProvider), tap a legend dot to toggle its series. ponytail: no
+/// hover tooltips (canvas hit-testing per point isn't worth it here); the
+/// legend toggle is the one interactive bit worth having.
 class GrowthChart extends StatefulWidget {
-  const GrowthChart({super.key});
+  const GrowthChart({required this.labels, required this.series, required this.colors, super.key});
+
+  final List<String> labels;
+  final Map<String, List<double>> series;
+  final Map<String, Color> colors;
 
   @override
   State<GrowthChart> createState() => _GrowthChartState();
@@ -23,7 +28,7 @@ class _GrowthChartState extends State<GrowthChart> {
         Wrap(
           spacing: 16,
           children: [
-            for (final key in chartSeries.keys)
+            for (final key in widget.series.keys)
               InkWell(
                 onTap: () => setState(
                   () => _hidden.contains(key) ? _hidden.remove(key) : _hidden.add(key),
@@ -38,7 +43,7 @@ class _GrowthChartState extends State<GrowthChart> {
                         height: 8,
                         margin: const EdgeInsets.only(right: 6),
                         decoration: BoxDecoration(
-                          color: chartSeriesColors[key],
+                          color: widget.colors[key],
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -54,7 +59,14 @@ class _GrowthChartState extends State<GrowthChart> {
         SizedBox(
           height: 240,
           width: double.infinity,
-          child: CustomPaint(painter: _ChartPainter(_hidden)),
+          child: CustomPaint(
+            painter: _ChartPainter(
+              hidden: _hidden,
+              labels: widget.labels,
+              series: widget.series,
+              colors: widget.colors,
+            ),
+          ),
         ),
       ],
     );
@@ -62,8 +74,17 @@ class _GrowthChartState extends State<GrowthChart> {
 }
 
 class _ChartPainter extends CustomPainter {
-  _ChartPainter(this.hidden);
+  _ChartPainter({
+    required this.hidden,
+    required this.labels,
+    required this.series,
+    required this.colors,
+  });
+
   final Set<String> hidden;
+  final List<String> labels;
+  final Map<String, List<double>> series;
+  final Map<String, Color> colors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -71,12 +92,12 @@ class _ChartPainter extends CustomPainter {
     final w = size.width, h = size.height;
     final plotW = w - padL - padR, plotH = h - padT - padB;
 
-    final visibleMax = chartSeries.entries
+    final visibleMax = series.entries
         .where((e) => !hidden.contains(e.key))
         .expand((e) => e.value)
         .fold<double>(0, (m, v) => v > m ? v : m);
-    final niceMax = (visibleMax / 1000).ceil() * 1000;
-    final max = niceMax == 0 ? 1000.0 : niceMax.toDouble();
+    final niceMax = visibleMax <= 5 ? 5.0 : (visibleMax / 5).ceil() * 5.0;
+    final max = niceMax == 0 ? 5.0 : niceMax;
 
     final gridPaint = Paint()
       ..color = AC.line
@@ -91,20 +112,21 @@ class _ChartPainter extends CustomPainter {
       _paintText(canvas, text, Offset(0, y - 6), labelStyle);
     }
 
-    final n = chartSeries.values.first.length;
-    final xStep = plotW / (n - 1);
+    if (series.isEmpty || series.values.first.isEmpty) return;
+    final n = series.values.first.length;
+    final xStep = n > 1 ? plotW / (n - 1) : 0.0;
     double xAt(int i) => padL + i * xStep;
     double yAt(double v) => padT + plotH - (v / max) * plotH;
 
-    for (var i = 0; i < chartWeekLabels.length; i++) {
-      final idx = i * 2;
-      final tp = _textPainter(chartWeekLabels[i], labelStyle);
-      tp.paint(canvas, Offset(xAt(idx) - tp.width / 2, h - 14));
+    final labelStep = (labels.length / 5).ceil().clamp(1, labels.length);
+    for (var i = 0; i < labels.length; i += labelStep) {
+      final tp = _textPainter(labels[i], labelStyle);
+      tp.paint(canvas, Offset(xAt(i) - tp.width / 2, h - 14));
     }
 
-    for (final entry in chartSeries.entries) {
+    for (final entry in series.entries) {
       if (hidden.contains(entry.key)) continue;
-      final color = chartSeriesColors[entry.key]!;
+      final color = colors[entry.key]!;
       final points = [for (var i = 0; i < entry.value.length; i++) Offset(xAt(i), yAt(entry.value[i]))];
 
       final area = Path()..moveTo(padL, h - padB);
@@ -157,5 +179,6 @@ class _ChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ChartPainter oldDelegate) => oldDelegate.hidden != hidden;
+  bool shouldRepaint(covariant _ChartPainter oldDelegate) =>
+      oldDelegate.hidden != hidden || oldDelegate.series != series;
 }

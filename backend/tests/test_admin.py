@@ -68,3 +68,41 @@ async def test_sensitive_actions_show_up_in_audit_log(client, superadmin_token):
     match = next(entry for entry in logs if entry["action"] == "community.create")
     assert match["entity_id"] == community_id
     assert match["actor_mobile"] == "+919000000009"
+
+
+async def test_resident_cannot_view_dashboard_stats(client, resident_token):
+    r = await client.get("/api/v1/admin/dashboard-stats", headers=_h(resident_token))
+    assert r.status_code == 403
+
+
+async def test_dashboard_stats_reflect_real_data(client, superadmin_token, resident_token):
+    r = await client.post(
+        "/api/v1/communities", headers=_h(superadmin_token), json={"name": "Stats Test Community"}
+    )
+    community_id = r.json()["id"]
+    r = await client.post(
+        f"/api/v1/communities/{community_id}/members", headers=_h(resident_token), json={}
+    )
+    membership_id = r.json()["id"]
+    await client.patch(
+        f"/api/v1/communities/{community_id}/members/{membership_id}",
+        headers=_h(superadmin_token),
+        json={"status": "active", "role": "resident"},
+    )
+
+    r = await client.get("/api/v1/admin/dashboard-stats", headers=_h(superadmin_token))
+    assert r.status_code == 200
+    stats = r.json()
+    assert stats["total_communities"] >= 1
+    assert stats["total_residents"] >= 1
+
+
+async def test_growth_series_has_requested_number_of_days(client, superadmin_token):
+    r = await client.get(
+        "/api/v1/admin/growth-series", headers=_h(superadmin_token), params={"days": 5}
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["labels"]) == 5
+    assert len(body["new_users"]) == 5
+    assert len(body["new_bookings"]) == 5
