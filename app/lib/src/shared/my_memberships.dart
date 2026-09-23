@@ -62,3 +62,41 @@ final myActiveMembershipProvider = Provider<AsyncValue<MyMembership?>>((ref) {
     return null;
   });
 });
+
+/// Same idea, filtered to a specific role — e.g. Community Admin's tab shell
+/// scopes its Overview/Residents/Notices tabs to the first community it
+/// actively administers.
+final firstActiveMembershipForRoleProvider =
+    Provider.family<AsyncValue<MyMembership?>, String>((ref, role) {
+  return ref.watch(myMembershipsProvider).whenData((list) {
+    for (final m in list) {
+      if (m.status == 'active' && m.role == role) return m;
+    }
+    return null;
+  });
+});
+
+class CommunityMember {
+  CommunityMember({required this.id, required this.role, required this.status});
+  final String id, role, status;
+
+  factory CommunityMember.fromJson(Map<String, dynamic> j) => CommunityMember(
+        id: j['id'] as String,
+        role: j['role'] as String,
+        status: j['status'] as String,
+      );
+}
+
+/// GET /communities/{id}/members — every membership in a community (any
+/// status), for whoever holds community.member.manage there.
+final communityMembersProvider =
+    FutureProvider.family<List<CommunityMember>, String>((ref, communityId) async {
+  try {
+    final res = await ref.read(apiClientProvider).raw.get('/communities/$communityId/members');
+    return (res.data as List)
+        .map((e) => CommunityMember.fromJson(e as Map<String, dynamic>))
+        .toList();
+  } on DioException catch (e) {
+    throw AppException.fromDio(e);
+  }
+});
