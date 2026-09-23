@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from app.config import get_settings
 from app.db import Base
-from app.models import *  # noqa: F401,F403  (populate Base.metadata)
+from models import *  # noqa: F401,F403  (populate Base.metadata)
 
 config = context.config
 if config.config_file_name:

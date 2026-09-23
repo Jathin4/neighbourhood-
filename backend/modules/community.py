@@ -9,10 +9,9 @@ from app.db import get_db
 from app.deps import current_user, get_membership, require
 from app.enums import MembershipStatus, PlatformRole
 from app.errors import forbidden
-from app.models.community import Community
-from app.models.user import User
-from app.modules.community import service
-from app.modules.community.schemas import (
+from models.community import Community
+from models.user import User
+from schemas.community import (
     CommunityIn,
     CommunityOut,
     CommunityUpdateIn,
@@ -27,6 +26,7 @@ from app.modules.community.schemas import (
     UnitBulkIn,
     UnitOut,
 )
+from services import community as service
 
 router = APIRouter(prefix="/communities", tags=["communities"])
 
@@ -82,7 +82,7 @@ async def list_communities(
             q = q.where(Community.name.ilike(f"%{search}%"))
         return list(await db.scalars(q.order_by(Community.name)))
     # Residents see only communities they belong to.
-    from app.models.membership import Membership
+    from models.membership import Membership
 
     q = (
         select(Community)

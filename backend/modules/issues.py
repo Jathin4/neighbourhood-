@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.deps import current_user
-from app.models.user import User
-from app.modules.issues import service
-from app.modules.issues.schemas import IssueActionIn, IssueIn, IssueOut
+from models.user import User
+from schemas.issues import IssueActionIn, IssueIn, IssueOut
+from services import issues as service
 
 router = APIRouter(prefix="/issues", tags=["issues"])
 

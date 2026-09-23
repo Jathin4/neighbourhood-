@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import rbac
 from app.enums import IssueStatus, MembershipStatus, PlatformRole
 from app.errors import AppError, forbidden, not_found
-from app.models.community_content import Issue
-from app.models.membership import Membership
-from app.models.user import User
+from models.community_content import Issue
+from models.membership import Membership
+from models.user import User
 
 
 async def _active_membership(db: AsyncSession, user_id: uuid.UUID, community_id: uuid.UUID) -> Membership | None:

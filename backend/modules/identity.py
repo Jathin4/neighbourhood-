@@ -4,9 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.db import get_db
 from app.deps import current_user
-from app.models.user import User
-from app.modules.identity import service
-from app.modules.identity.schemas import (
+from models.user import User
+from schemas.identity import (
     EmailLoginIn,
     MyMembershipOut,
     OtpRequestIn,
@@ -17,6 +16,7 @@ from app.modules.identity.schemas import (
     UserOut,
     UserUpdateIn,
 )
+from services import identity as service
 
 settings = get_settings()
 

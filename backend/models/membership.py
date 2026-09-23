@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 from app.enums import CommunityRole, MembershipStatus, VerificationStatus
-from app.models.base import PkMixin, TimestampMixin
+from models.base import PkMixin, TimestampMixin
 
 
 class Household(PkMixin, TimestampMixin, Base):

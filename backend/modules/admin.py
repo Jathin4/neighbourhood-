@@ -6,15 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import audit, rbac
 from app.db import get_db
 from app.deps import require
-from app.models.user import User
-from app.modules.admin import service
-from app.modules.admin.schemas import (
+from models.user import User
+from schemas.admin import (
     AuditLogOut,
     DashboardStatsOut,
     GrowthSeriesOut,
     UserAdminOut,
     UserStatusUpdateIn,
 )
+from services import admin as service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

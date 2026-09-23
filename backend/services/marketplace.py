@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.marketplace import ProviderProfile
+from models.marketplace import ProviderProfile
 
 
 async def get_my_provider_profile(db: AsyncSession, user_id: uuid.UUID) -> ProviderProfile | None:

@@ -10,9 +10,9 @@ from app import rbac
 from app.db import get_db
 from app.enums import MembershipStatus
 from app.errors import AppError, forbidden
-from app.models.membership import Membership
-from app.models.user import User
 from app.security import decode_access_token
+from models.membership import Membership
+from models.user import User
 
 bearer = HTTPBearer(auto_error=False)
 

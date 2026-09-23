@@ -1,8 +1,8 @@
 import pytest
 
 from app.enums import AccountStatus, PlatformRole
-from app.models.user import User
 from app.security import hash_password
+from models import User
 
 pytestmark = pytest.mark.asyncio
 

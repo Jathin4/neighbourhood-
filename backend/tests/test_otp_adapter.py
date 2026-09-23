@@ -1,6 +1,6 @@
 import pytest
 
-from app.modules.identity.otp_adapter import ConsoleSmsSender, Fast2SmsSender, get_sms_sender
+from services.identity_otp_adapter import ConsoleSmsSender, Fast2SmsSender, get_sms_sender
 
 pytestmark = pytest.mark.asyncio
 
@@ -10,14 +10,14 @@ async def test_console_sender_never_raises(caplog):
 
 
 def test_no_api_key_falls_back_to_console(monkeypatch):
-    from app.modules.identity import otp_adapter
+    from services import identity_otp_adapter as otp_adapter
 
     monkeypatch.setattr(otp_adapter.settings, "fast2sms_api_key", None)
     assert isinstance(get_sms_sender(), ConsoleSmsSender)
 
 
 def test_api_key_selects_fast2sms(monkeypatch):
-    from app.modules.identity import otp_adapter
+    from services import identity_otp_adapter as otp_adapter
 
     monkeypatch.setattr(otp_adapter.settings, "fast2sms_api_key", "dummy-key")
     assert isinstance(get_sms_sender(), Fast2SmsSender)

@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from sqlalchemy import select
 
 from app import errors
@@ -11,9 +10,9 @@ from app.api import api_v1
 from app.config import get_settings
 from app.db import Base, SessionLocal, engine
 from app.enums import AccountStatus, PlatformRole
-from app.models import *  # noqa: F401,F403  (register mappers on Base.metadata)
-from app.models.user import User
 from app.security import hash_password
+from models import *  # noqa: F401,F403  (register mappers on Base.metadata)
+from models.user import User
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 settings = get_settings()

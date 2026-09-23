@@ -4,6 +4,16 @@ FastAPI + SQLAlchemy (async). All data lives in a single SQLite file at
 `../db/tnn.db` per project requirement — swap `DATABASE_URL` to
 `postgresql+asyncpg://…` later and nothing else changes.
 
+## Layout
+
+Flat, one-file-per-feature — `app/` keeps the core (config, db, security,
+rbac, deps); everything feature-specific lives beside it:
+
+- `models/` — SQLAlchemy ORM tables
+- `schemas/` — Pydantic request/response models
+- `services/` — business logic
+- `modules/` — FastAPI routers, wired up in `app/api.py`
+
 ## Run
 
 ```bash
@@ -42,7 +52,7 @@ non-dev.
 
 - **OTP**: 6-digit, hashed at rest, 5-min TTL, 5 attempts, 5/hour rate limit.
   Dev returns the code as `debug_code` (`OTP_DEBUG=true`); production swaps
-  `ConsoleSmsSender` for a real adapter in `modules/identity/otp_adapter.py`.
+  `ConsoleSmsSender` for a real adapter in `services/identity_otp_adapter.py`.
 - **Tokens**: 15-min JWT access, opaque refresh with rotation + reuse
   detection (a reused refresh token revokes the whole chain).
 - **RBAC** (`app/rbac.py`): capability-based. Platform roles

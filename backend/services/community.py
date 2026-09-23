@@ -9,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import rbac
 from app.enums import CommunityRole, MembershipStatus, VerificationStatus
 from app.errors import AppError, not_found
-from app.models.community import Community, Unit
-from app.models.community_content import Event, EventRsvp, Notice, NoticeRead
-from app.models.membership import Membership
-from app.models.user import User
-from app.modules.community.schemas import ImportRowResult, ImportSummary
+from models.community import Community, Unit
+from models.community_content import Event, EventRsvp, Notice, NoticeRead
+from models.membership import Membership
+from models.user import User
+from schemas.community import ImportRowResult, ImportSummary
 
 _MOBILE_RE = re.compile(r"^\+?[1-9]\d{7,14}$")
 _REQUIRED_CSV_COLUMNS = {"name", "mobile", "tower", "unit"}

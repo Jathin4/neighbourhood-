@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import BookingStatus
 from app.errors import AppError, forbidden, not_found
-from app.models.marketplace import Booking, ProviderProfile
-from app.models.user import User
-from app.modules.marketplace.service import get_my_provider_profile
+from models.marketplace import Booking, ProviderProfile
+from models.user import User
+from services.marketplace import get_my_provider_profile
 
 
 async def create_booking(

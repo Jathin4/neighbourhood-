@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.errors import correlation_id
-from app.models.audit import AuditLog
+from models.audit import AuditLog
 
 
 async def record(

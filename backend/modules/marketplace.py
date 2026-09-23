@@ -1,15 +1,15 @@
 """Provider directory (requirements doc section 19). A user opts into being a
 service provider by registering a ProviderProfile for themselves; bookings
-(see app.modules.bookings) are matched to providers by category."""
+(see modules.bookings) are matched to providers by category."""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.deps import current_user
 from app.errors import not_found
-from app.models.user import User
-from app.modules.marketplace import service
-from app.modules.marketplace.schemas import ProviderProfileIn, ProviderProfileOut
+from models.user import User
+from schemas.marketplace import ProviderProfileIn, ProviderProfileOut
+from services import marketplace as service
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 

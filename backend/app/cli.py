@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.db import Base, SessionLocal, engine
 from app.enums import AccountStatus, PlatformRole
-from app.models import User
+from models import User
 
 
 async def _create_schema() -> None:

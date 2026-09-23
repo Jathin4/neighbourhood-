@@ -7,10 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import rbac
 from app.config import get_settings
 from app.errors import AppError
-from app.models.community import Community
-from app.models.membership import Membership
-from app.models.user import OtpChallenge, RefreshToken, User
-from app.modules.identity.otp_adapter import get_sms_sender
 from app.security import (
     code_matches,
     create_access_token,
@@ -20,6 +16,10 @@ from app.security import (
     sha256,
     verify_password,
 )
+from models.community import Community
+from models.membership import Membership
+from models.user import OtpChallenge, RefreshToken, User
+from services.identity_otp_adapter import get_sms_sender
 
 settings = get_settings()
 

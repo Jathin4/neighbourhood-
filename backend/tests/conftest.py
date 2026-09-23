@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base, get_db
 from app.enums import AccountStatus, PlatformRole
 from app.main import app
-from app.models import User
+from models import User
 
 # One shared in-memory DB for the whole test session.
 _engine = create_async_engine(

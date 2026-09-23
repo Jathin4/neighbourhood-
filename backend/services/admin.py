@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import CommunityRole, MembershipStatus
 from app.errors import not_found
-from app.models.audit import AuditLog
-from app.models.community import Community
-from app.models.marketplace import Booking, ProviderProfile
-from app.models.membership import Membership
-from app.models.user import User
+from models.audit import AuditLog
+from models.community import Community
+from models.marketplace import Booking, ProviderProfile
+from models.membership import Membership
+from models.user import User
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
